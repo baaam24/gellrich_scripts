@@ -1,0 +1,27 @@
+This is the help file for summary.sh
+
+Due to the fact that summary.sh is still in the progress of creation this halp-file may not be complete
+questions and ideas welcome _ tizian
+
+summary -
+
+summary.sh <arguments>
+
+
+Following commands are supported:
+
+-h	opens this help file
+-d	choose the used delimter of the CSV-File
+	Standard is Semicolon ";"
+	Some progams might use Comma "," or Colon ":"
+-s	choose the Decimal separator
+	Standard is Comma ","
+	Some reginal settings might prefer Comma ","
+ 
+planned:
+trennzeichen CSV d delimiter
+ Suchtiefe f suchtiefe in ordnern
+ Suchtiefe c current folder
+ trennzeichen dezimal s seperator
+ Output auf dem terminal (klein mittel groß)
+ max number abfrage
