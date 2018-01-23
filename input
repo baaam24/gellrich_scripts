@@ -1,5 +1,5 @@
 #!/bin/bash
-#testetstsetrste
+#Test ob pullen funktioniert
 
 programm=gaussian
 prozessoren=12
