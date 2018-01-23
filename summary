@@ -11,6 +11,8 @@
 # please report any bugs and suggestions via mail or during cigarette breaks
 #
 
+
+
 # difine variables
 VERSION="0.1"
 USERNAME=`whoami`
