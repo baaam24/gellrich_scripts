@@ -1,0 +1,5 @@
+This script goes into every "conformere-folder" (Name has to be K followed by 2 digits
+and submits them to ORCA or Gaussian16 (depends on the file suffix of the input-files)
+
+Set flags for alternative parameters:
+	-H Walltime in hours (Default 72)

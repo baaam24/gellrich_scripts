@@ -16,13 +16,8 @@ do
         stunden=$OPTARG
         ;;
     h)
-        echo ""
-        echo "This script goes into every "conformere-folder" (Name has to be K followed by 2 digits"
-        echo "and submits them to ORCA or Gaussian16 (depends on the file suffix of the input-files)"
-        echo ""
-        echo "Set flags for alternative parameters:"
-        echo "-H Walltime in hours (Default 72)"
-        echo ""
+ 	help_pfad=$(dirname $0)
+	vim "$help_pfad/help_submit.txt" 
         exit
         ;;
     esac

@@ -12,5 +12,3 @@ Set flags for alternative parameters:
 	-H Used walltime in hours (Default 72) when created input-file is subsequently submitted
 	-o created input file will be submitted to Gaussian16 or Orca
 	-h opens this help-file
-	
-
