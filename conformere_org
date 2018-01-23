@@ -1,0 +1,25 @@
+#!/bin/bash
+
+echo ""
+
+for file in *
+do
+	
+conf_number=$(echo $file | grep -o -E "K{1}[[:digit:]]{2}")
+dateiendung=$(echo $file | grep -o -E "(.xyz|.dat|.gjf)\>")
+
+if [ -z $dateiendung ]; then
+	echo "File $file is not an .xyz, .dat or .gjf file."
+	continue
+fi
+
+if [ -n "$conf_number" ]; then
+	mkdir $conf_number
+	mv $file $conf_number
+else 
+	echo "File $file is not a conformere. Filename has to contain "K" followed by a two digit number."
+fi
+
+done
+
+echo ""
