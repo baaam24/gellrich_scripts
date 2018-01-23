@@ -1,0 +1,14 @@
+This script creates input files (.dat for Gaussian, .gjf for ORCA) out of .xyz files with the route line (Gaussian)
+
+# pbe1pbe/def2SV opt freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3
+or ORCA
+! DLPNO-CCSD(T) NoUseSym def2-TZVP def2-TZVP/C tightscf
+
+Set flags for alternative parameters:
+	-S Submit calculation as DLPNO-CCSDT SP in ORCA (only on halo) (File will get an _SP suffix)
+	-n Used processors (Default 12)
+	-m Used main memory in MB (Default 10000)
+	-H Used walltime in hours (Default 72) when created input-file is subsequently submitted
+	-o created input file will be submitted to Gaussian16 or Orca
+	-h opens this help-file
+
