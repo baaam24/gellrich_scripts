@@ -1,3 +1,4 @@
+###########testestestestes
 #!/bin/bash
 
 NATOMS=`grep -m 1 "NAtoms=" $1 | awk '{print $2}' | sed -e 's/ //g'`
