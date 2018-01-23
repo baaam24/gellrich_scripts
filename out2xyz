@@ -1,0 +1,12 @@
+#!/bin/bash
+
+NATOMS=`grep -m 1 "NAtoms=" $1 | awk '{print $2}' | sed -e 's/ //g'`
+
+COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $1 ` #read the coordinates used for the frequency computation
+
+COORDS=`echo "$COORDS_RAW" | sed -e 1d | sed -e 's/,0,/,/g' | sed -e 's/,-/    -/g' | sed -e 's/,/     /g' | sed -e "1ipufferzeile" | sed -e "1i$NATOMS" | sed -e 's/pufferzeile//g'` # some nice formatting
+
+
+
+echo "$COORDS" > ${1/.out}.xyz
+
