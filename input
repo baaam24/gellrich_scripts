@@ -35,17 +35,18 @@ do
 		;;
 	
 	h)
-		vim help_input.txt  
+		help_pfad=`dirname $0`
+		vim "$help_pfad/help_input.txt"  
 		exit
 		;;
 	esac
 done
 
-################Leerzeile für schönere Formatierung######
+################Leerzeile fuer schoenere Formatierung######
 echo ""
 
 #########################################################
-#Eingabe wird auf potentielle Fehler überprüft
+#Eingabe wird auf potentielle Fehler ueberprueft
 #########################################################
 
 dateiendung=$(echo $file | grep -o -E "(.xyz|.out)\>")
@@ -75,10 +76,10 @@ if [ $dateiendung = ".out" ]; then
 fi
 
 ################################################################
-#Überprüft anhand der Symbole für die Atomarten in der xyz-Datei
+#Ueberprueft anhand der Symbole fuer die Atomarten in der xyz-Datei
 #(Chemcraft verwendet Zahlen, Avogadro Buchstaben), ob es sich um
 #eine xyz-Datei aus Avogadro oder Gaussian handelt. Im Falle von
-#Avogadro löscht er die ersten beiden Zeilen
+#Avogadro loescht er die ersten beiden Zeilen
 ################################################################
 
 if [ $(grep -c '[[:upper:]]' $file) -ne 0 ]; then
@@ -88,7 +89,7 @@ fi
 
 ####################################################################
 #Falls nicht der Flag -S gesetzt wurde, wird die Datei in die Input-
-#Datei für die Gaussian Optimierungen umgewandelt
+#Datei fuer die Gaussian Optimierungen umgewandelt
 ####################################################################
 			if [ $programm = gaussian ]; then
 	
