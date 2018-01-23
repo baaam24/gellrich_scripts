@@ -136,7 +136,7 @@ tail $name | grep " Job cpu time:" | awk '{print $4":"$6":"$8":" $10}'
 ######################################################
 # initialisation of the *.csv files
 
-echo "summary.sh" > $CSVFILENAME #
+echo "summary" > $CSVFILENAME #
 echo "user;$USERNAME" >> $CSVFILENAME
 echo "directory;$DIR" >> $CSVFILENAME
 echo "host;$(hostname)" >> $CSVFILENAME
