@@ -129,6 +129,9 @@ PROG=`echo $RAW | awk '{print $5 $6}' | sed 's/,//g'`
 REV=`echo $RAW | awk '{print $8}' | sed 's/,//g'`
 }
 
+function find_runtime {
+tail $name | grep " Job cpu time:" | awk '{print $4":"$6":"$8":" $10}'
+}
 
 ######################################################
 # initialisation of the *.csv files
@@ -140,7 +143,7 @@ echo "host;$(hostname)" >> $CSVFILENAME
 
 echo " " >> $CSVFILENAME
 
-TABLEHEAD="File name;method; basisset; E(el); ZP corr.; E corr.; H corr.; G corr.; imaginary frequencies; Normal terminations; programm; Revison "
+TABLEHEAD="File name;method; basisset; E(el); ZP corr.; E corr.; H corr.; G corr.; imaginary frequencies; Normal terminations; programm; Revison; Runtime"
 
 echo "$TABLEHEAD" >> $CSVFILENAME
 
@@ -156,11 +159,12 @@ find_ther_corr
 find_Nimag
 find_NTerm
 find_version
+find_runtime
 name=`echo $name | sed -e 's/\.//g' `
 
 
-echo "$name $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTHERM $PROG $REV"
-echo "$name;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTHERM;$PROG;$REV" >> $CSVFILENAME
+echo "$name $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTHERM $PROG $REV $Runtime"
+echo "$name;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTHERM;$PROG;$REV;$Runtime" >> $CSVFILENAME
 
 done
 
