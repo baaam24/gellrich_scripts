@@ -130,7 +130,7 @@ REV=`echo $RAW | awk '{print $8}' | sed 's/,//g'`
 }
 
 function find_runtime {
-tail $name | grep " Job cpu time:" | awk '{print $4":"$6":"$8":" $10}'
+RUNTIME=`tail $name | grep " Job cpu time:" | awk '{print $4":"$6":"$8":" $10}'`
 }
 
 ######################################################
@@ -163,8 +163,8 @@ find_runtime
 name=`echo $name | sed -e 's/\.//g' `
 
 
-echo "$name $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTHERM $PROG $REV $Runtime"
-echo "$name;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTHERM;$PROG;$REV;$Runtime" >> $CSVFILENAME
+echo "$name $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTHERM $PROG $REV $RUNTIME"
+echo "$name;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTHERM;$PROG;$REV;$RUNTIME" >> $CSVFILENAME
 
 done
 
