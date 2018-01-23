@@ -1,0 +1,157 @@
+#!/bin/bash
+
+programm=gaussian
+prozessoren=12
+hauptspeicher=10000
+stunden=72
+ausfuehren=false
+route="# pbe1pbe/def2SV opt freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3"
+
+while getopts "f:oH:n:m:hS" OPTION
+do
+	case $OPTION in 
+	f)
+		file=$OPTARG
+		;;
+	n)
+		prozessoren=$OPTARG
+		;;
+	m)
+		hauptspeicher=$OPTARG
+		;;
+	H)
+		stunden=$OPTARG
+		;;
+	o)
+		ausfuehren=true
+		;;
+###########################################################################################
+############################# ORCA SP DLPNO-CCSDT-Calculation #############################
+###########################################################################################
+	S)
+		programm=orca
+		route="! DLPNO-CCSD(T) NoUseSym def2-TZVP def2-TZVP/C tightscf"
+		;;
+	
+	h)
+		echo ""
+		echo "This script creates input files (.dat for Gaussian, .gjf for ORCA) out of .xyz files with the route line (Gaussian)"
+		echo "# pbe1pbe/def2SV opt freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3"
+		echo "or ORCA"
+		echo "! DLPNO-CCSD(T) NoUseSym def2-TZVP def2-TZVP/C tightscf"
+		echo ""
+		echo "Set flags for alternative parameters:"
+		echo "-S Submit calculation as DLPNO-CCSDT SP in ORCA (only on halo) (File will get an _SP suffix)"
+		echo "-n Used processors (Default 12)"
+		echo "-m Used main memory in MB (Default 10000)"
+		echo "-h Used time in hours (Default 72)"
+		echo "-o created input file will be submitted to Gaussian or Orca"
+		echo ""
+		exit
+		;;
+	esac
+done
+
+################Leerzeile für schönere Formatierung######
+echo ""
+
+#########################################################
+#Eingabe wird auf potentielle Fehler überprüft
+#########################################################
+
+dateiendung=$(echo $file | grep -o -E "(.xyz|.out)\>")
+
+if [ ! -f "$file" ]; then
+	echo -e "No Input-File or File does not exist (use the flag -f).\033[31m Aborting.\033[0m"
+	echo ""
+	exit
+fi
+
+if [ -z "$dateiendung" ]; then
+	echo -e "\033[31mInput-File is no .xyz or .out File. Aborting.\033[0m"
+	echo ""
+	exit
+fi
+ 
+################################################################
+#Falls es sich beim Input, um eine .out-Datei handelt, wird diese
+#in eine xyz-Datei umgewandelt
+################################################################
+
+
+if [ $dateiendung = ".out" ]; then
+	echo -e "Input-File is an .out-File.\033[1;32m Converting to .xyz.\033[0m"
+	out2xyz $file
+	file=${file/.out}.xyz
+fi
+
+################################################################
+#Überprüft anhand der Symbole für die Atomarten in der xyz-Datei
+#(Chemcraft verwendet Zahlen, Avogadro Buchstaben), ob es sich um
+#eine xyz-Datei aus Avogadro oder Gaussian handelt. Im Falle von
+#Avogadro löscht er die ersten beiden Zeilen
+################################################################
+
+if [ $(grep -c '[[:upper:]]' $file) -ne 0 ]; then
+
+	sed -i '1d;2d' $file
+fi 
+
+####################################################################
+#Falls nicht der Flag -S gesetzt wurde, wird die Datei in die Input-
+#Datei für die Gaussian Optimierungen umgewandelt
+####################################################################
+			if [ $programm = gaussian ]; then
+	
+sed -i '1i0 1' $file
+sed -i '1ipufferzeile' $file
+sed -i "1i${file/.xyz}" $file
+sed -i '1ipufferzeile' $file
+sed -i "1i$route" $file
+sed -i "1i\%mem=${hauptspeicher}MB" $file
+sed -i "1i\%nprocshared=${prozessoren}" $file
+sed -i "1i\%chk=${file/.xyz}.chk" $file
+
+echo 'pufferzeile' >> $file
+echo 'pufferzeile' >> $file
+echo 'pufferzeile' >> $file
+echo 'pufferzeile' >> $file
+
+sed -i 's/pufferzeile//g' $file
+
+mv $file ${file/.xyz}.dat
+					fi
+######################################################################
+#Ende des Erstellens der Gaussian-Inputstruktur
+######################################################################
+######################################################################
+#Falls die Flag -S gesetzt wurde, wird die ORCA-Inputstruktur fuer die
+#DLPNO-CCSDT-Rechnungen erstellt
+######################################################################
+			if [ $programm = orca ]; then
+echo "*" >> $file
+sed -i '1i* xyz 0 1' $file
+sed -i '1ipufferzeile' $file
+sed -i '1iend' $file
+sed -i "1i%pal nprocs=$prozessoren" $file
+sed -i "1i%MaxCore $hauptspeicher" $file
+sed -i '1ipufferzeile' $file
+sed -i "1i$route" $file
+	
+sed -i 's/pufferzeile//g' $file
+
+mv $file ${file/.xyz}_SP.gjf
+					fi
+######################################################################
+#Ende des Erstellens der ORCA-Inputstruktur
+######################################################################
+
+if [ $ausfuehren = false ]; then
+	echo -e "\033[1;32mFile will not be submitted\033[0m"
+else 
+	if [ $programm = gaussian ]; then
+           gaussian16 $stunden:00:00
+	elif [ $programm = orca ]; then
+	   for file in *.gjf; do orca $file $stunden:00:00; done
+	fi
+fi
