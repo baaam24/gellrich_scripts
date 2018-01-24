@@ -110,6 +110,8 @@ echo 'pufferzeile' >> $file
 sed -i 's/pufferzeile//g' $file
 
 mv $file ${file/.xyz}.dat
+
+echo -e "\033[1;32mGaussian16\033[0m input file \033[1;32m${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
 					fi
 ######################################################################
 #Ende des Erstellens der Gaussian-Inputstruktur
@@ -130,14 +132,17 @@ sed -i "1i$route" $file
 	
 sed -i 's/pufferzeile//g' $file
 
+echo -e "\033[1;32mORCA\033[0m input file \033[1;32m${file/.xyz}_SP.gjf\033[0m is created from \033[1;32m$file\033[0m."
+
 mv $file ${file/.xyz}_SP.gjf
+
 					fi
 ######################################################################
 #Ende des Erstellens der ORCA-Inputstruktur
 ######################################################################
 
 if [ $ausfuehren = false ]; then
-	echo -e "\033[1;32mFile will not be submitted\033[0m"
+	echo -e "\e[33mFile will not be submitted\033[0m"
 else 
 	if [ $programm = gaussian ]; then
            gaussian16 $stunden:00:00
