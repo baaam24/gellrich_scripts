@@ -5,6 +5,8 @@ For getting the scripts to work on the different clusters please read INTRODUCTI
 
 Overview:
 
+Use the flag -h after the scripts to show the help file.
+
 1) input: 
 Create standard Input files for Gaussian16 or ORCA from .out or .xyz files
 (can also be used for submitting)
