@@ -26,14 +26,14 @@ done
 
 
 #################################################################
-#Schleife, die über jede Datei im entsprechenden Ordner geht
+#Schleife, die ueber jede Datei im entsprechenden Ordner geht
 #################################################################
 
 for file in *
 do
 
 #################################################################
-#Es wird überprüft, ob die aktuelle Datei ein Ordner ist
+#Es wird Ueberprueft, ob die aktuelle Datei ein Ordner ist
 #################################################################
 
 if [ -d $file ]; then
@@ -97,7 +97,7 @@ do
 	input_orca=$(find -type f -name *.gjf | wc -l)
 
 #################################################################
-#Überprüft, ob keine Dateien, nur Gaussian16, nur ORCA oder 
+#Ueberprueft, ob keine Dateien, nur Gaussian16, nur ORCA oder 
 #Gaussian16 und ORCA Input-Dateien im Ordner sind
 #################################################################
 

@@ -1,25 +1,39 @@
 #!/bin/bash
 
-echo ""
+leer=$(find -maxdepth 1 -type f)
+
+if [[ -z $leer ]]; then
+	echo -e "\e[31mNo files in this folder. Aborting.\e[39m"
+	exit
+fi 
 
 for file in *
 do
+
+if [ -d $file ]; then
+	continue
+fi	
 	
 conf_number=$(echo $file | grep -o -E "K{1}[[:digit:]]{2}")
 dateiendung=$(echo $file | grep -o -E "(.xyz|.dat|.gjf)\>")
 
 if [ -z $dateiendung ]; then
-	echo "File $file is not an .xyz, .dat or .gjf file."
+	echo -e "\e[33mFile $file is not an .xyz, .dat or .gjf file.\033[0m"
 	continue
 fi
 
 if [ -n "$conf_number" ]; then
+
+	if [ -d $conf_number ]; then
+		echo -e "\e[31mFolder $conf_number exists already. Aborting.\e[39m"
+		exit
+	fi
+
+	echo -e "File \033[1;32m$file\033[0m is moved into the new created folder \033[1;32m$conf_number\033[0m."
 	mkdir $conf_number
 	mv $file $conf_number
 else 
-	echo "File $file is not a conformere. Filename has to contain "K" followed by a two digit number."
+	echo "File $file is not a conformere-file. Filename has to contain "K" followed by a two digit number."
 fi
 
 done
-
-echo ""
