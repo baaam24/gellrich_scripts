@@ -53,13 +53,13 @@ dateiendung=$(echo $file | grep -o -E "(.xyz|.out)\>")
 
 if [ ! -f "$file" ]; then
 	echo -e "No Input-File or File does not exist (use the flag -f).\033[31m Aborting.\033[0m"
-	echo ""
+	echo "################################################################"
 	exit
 fi
 
 if [ -z "$dateiendung" ]; then
-	echo -e "\033[31mInput-File is no .xyz or .out File. Aborting.\033[0m"
-	echo ""
+	echo -e "\033[31mInput-File $file is no .xyz or .out File. Aborting.\033[0m"
+	echo "################################################################"
 	exit
 fi
  
@@ -70,7 +70,16 @@ fi
 
 
 if [ $dateiendung = ".out" ]; then
-	echo -e "Input-File is an .out-File.\033[1;32m Converting to .xyz.\033[0m"
+	echo -e "Input-File $file is an .out-File. Try to convert to .xyz."
+	
+	test=$(grep -i -o "Redundant internal coordinates found in file" $file)
+
+	if [[ -z $test ]]; then
+		echo -e "\033[31mNo frequency calculation was performed. Aborting.\033[0m"
+		echo "################################################################"
+		exit
+	fi
+
 	out2xyz $file
 	file=${file/.out}.xyz
 fi
@@ -150,3 +159,5 @@ else
 	   for file in *.gjf; do orca $file $stunden:00:00; done
 	fi
 fi
+
+echo "################################################################"
