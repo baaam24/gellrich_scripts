@@ -21,7 +21,7 @@ Submits all different conformere input files of Gaussian16 or ORCA in their resp
 (the different conformeres have to be stored in folders with the names K followed by two digits)
 
 3) out2xyz: 
-Converts an output-file to a xyz file (calculation has to have a frequency calculation)
+Converts an output-file to a xyz file (the calculation beforehand has to have done a frequency calculation)
 This script is automatically executed when the input-script uses an output file as an argument
 
 4) conformere_org: 
