@@ -1,0 +1,8 @@
+This script checks all files in the folder if they are .xyz, .dat or .gjf files 
+and "conformere files" (filename has to contain K followed by two digits)
+
+For every conformere file xyz, dat and gjf file a folder is created with the respective
+conformere number and the file is moved into this folder
+
+Set flags for alternative parameters:
+	-h opens this helpfile

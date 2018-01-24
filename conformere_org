@@ -1,5 +1,24 @@
 #!/bin/bash
 
+#####################################################################
+#Flag fuer das Ausgeben des Hilfe Textfiles
+#####################################################################
+
+while getopts "h" OPTION
+do
+    case $OPTION in
+    h)
+ 	help_pfad=$(dirname $0)
+	vim "$help_pfad/help_conformere_org.txt" 
+        exit
+        ;;
+    esac
+done 
+
+#####################################################################
+#Testen, ob der Ordner ueberhaupt Dateien enthält, wenn nicht abbruch
+#####################################################################
+
 leer=$(find -maxdepth 1 -type f)
 
 if [[ -z $leer ]]; then
@@ -7,25 +26,51 @@ if [[ -z $leer ]]; then
 	exit
 fi 
 
+#####################################################################
+#Schleife über alle Element im Ordner
+#####################################################################
+
 for file in *
 do
 
+#####################################################################
+#Falls es sich beim Element um einen Ordner handelt, wird die Iteration
+#dieser Schleife uebersprungen
+#####################################################################
 if [ -d $file ]; then
 	continue
 fi	
-	
+
+#####################################################################
+#"conf_number" speichert die Konformernummer der Datei
+#"dateiendung" speichert die Dateiendung, falls es sich bei der Datei
+#um eine xyz, dat oder gjf Datei handelt
+#####################################################################	
+
 conf_number=$(echo $file | grep -o -E "K{1}[[:digit:]]{2}")
 dateiendung=$(echo $file | grep -o -E "(.xyz|.dat|.gjf)\>")
 
+#####################################################################
+#Falls es sich bei der Datei um keine xyz, dat oder gjf Datei handelt
+#wird die Iteration der Schleife uebersprungen
+#####################################################################
 if [ -z $dateiendung ]; then
 	echo -e "\e[33mFile $file is not an .xyz, .dat or .gjf file.\033[0m"
 	continue
 fi
 
+#####################################################################
+#Wenn der Dateiname eine Konformerenbezeichnung enthaelt, wird ein
+#entsprechender Ordner erstellt und die Datei in diesen verschoben
+#####################################################################
 if [ -n "$conf_number" ]; then
-
+	
+#####################################################################
+#Wenn ein entsprechender Ordner fuer das Konformer schon existiert,
+#wird das Skript beendet
+#####################################################################
 	if [ -d $conf_number ]; then
-		echo -e "\e[31mFolder $conf_number exists already. Aborting.\e[39m"
+		echo -e "\e[31mFolder $conf_number exists already. Please check your files. Aborting.\e[39m"
 		exit
 	fi
 
@@ -33,6 +78,12 @@ if [ -n "$conf_number" ]; then
 	mkdir $conf_number
 	mv $file $conf_number
 else 
+
+#####################################################################
+#Falls die Datei keine Konformerenbezeichnung enthält, wird die 
+#Iteration der Schleife uebersprungen
+#####################################################################
+
 	echo "File $file is not a conformere-file. Filename has to contain "K" followed by a two digit number."
 fi
 
