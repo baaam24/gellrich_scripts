@@ -3,7 +3,7 @@ Useful scripts for computations.
 
 Use at own risk.
 
-Feel free to check the **** out of them and report errors, criticism and suggestions to Tizian and Max
+Feel free to check the **** out of them and report errors, criticism and suggestions to Tizian and/or Max
 
 For getting the scripts to work on the different clusters please read INTRODUCTION.pdf 
 
@@ -17,7 +17,7 @@ Create standard Input files for Gaussian16 or ORCA from .out or .xyz files
 (can also be used for submitting)
 
 2) submit: 
-Submits all different conformere input files of Gaussian16 or ORCA to the respective programs. 
+Submits all different conformere input files of Gaussian16 or ORCA in their respective folders to the respective programs. 
 (the different conformeres have to be stored in folders with the names K followed by two digits)
 
 3) out2xyz: 
