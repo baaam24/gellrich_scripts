@@ -1,7 +1,7 @@
 # gellrich_scripts
 Useful scripts for computations
 
-For getting the scripts to work on the different clusters please read INTRODUCTION.txt 
+For getting the scripts to work on the different clusters please read INTRODUCTION.pdf 
 
 Overview:
 
