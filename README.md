@@ -1,11 +1,16 @@
 # gellrich_scripts
-Useful scripts for computations
+Useful scripts for computations.
+
+Use at own risk.
+
+Feel free to check the **** out of them and report errors, criticism and suggestions to Tizian and Max
 
 For getting the scripts to work on the different clusters please read INTRODUCTION.pdf 
 
+
 Overview:
 
-Use the flag -h after the scripts to show the help file.
+Use the flag -h to show the help file.
 
 1) input: 
 Create standard Input files for Gaussian16 or ORCA from .out or .xyz files
