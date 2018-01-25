@@ -1,22 +1,39 @@
 #zweiter test
 #!/bin/bash
 
+##############################################################
+#Abbruch des Skripts, wenn kein Argument übergeben wurde
+##############################################################
+
 if [ -z $1 ]; then
 	echo -e "\033[31mNo argument. Aborting.\033[0m"
 	exit
 fi
 
+
+##############################################################
+#Falls Argument kein out-file ist, wird das Skript abgebrochen
+##############################################################
+
 dateiendung=$(echo $1 | grep -o -E ".out\>")
 
 if [ -z $dateiendung ]; then
-	echo -e "\033[31mArgument is not an .out file. Aborting.\033[0m"
+	echo -e "\033[31mArgument $1 is not an .out file. Aborting.\033[0m"
 	exit
 fi
 
+##############################################################
+#Anzahl der Atome und die "Rohkoordinaten" werden eingelesen
+##############################################################
 
 NATOMS=`grep -m 1 "NAtoms=" $1 | awk '{print $2}' | sed -e 's/ //g'`
 
 COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $1 ` #read the coordinates used for the frequency computation
+
+##############################################################
+#Das Skript erkennt, ob eine Frequenzrechnung ausgeführt wurde
+#Falls nicht wird es beendet
+##############################################################
 
 test=$(grep -i -o "Redundant internal coordinates found in file" $1)
 
@@ -25,8 +42,11 @@ if [[ -z $test ]]; then
 	exit
 fi
 
-COORDS=`echo "$COORDS_RAW" | sed -e 1d | sed -e 's/,0,/,/g' | sed -e 's/,-/    -/g' | sed -e 's/,/     /g' | sed -e "1ipufferzeile" | sed -e "1i$NATOMS" | sed -e 's/pufferzeile//g'` # some nice formatting
+##############################################################
+#Rohkoordinaten werden formatiert und in eine neue xyz Datei geschrieben
+##############################################################
 
+COORDS=`echo "$COORDS_RAW" | sed -e 1d | sed -e 's/,0,/,/g' | sed -e 's/,-/    -/g' | sed -e 's/,/     /g' | sed -e "1ipufferzeile" | sed -e "1i$NATOMS" | sed -e 's/pufferzeile//g'` # some nice formatting
 
 echo -e "Converting \033[1;32m$1\033[0m to \033[1;32m${1/.out}.xyz\033[0m"
 echo "$COORDS" > ${1/.out}.xyz
