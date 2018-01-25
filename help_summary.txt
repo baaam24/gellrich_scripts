@@ -10,13 +10,19 @@ summary.sh <arguments>
 
 Following commands are supported:
 
--h	opens this help file
--d	choose the used delimter of the CSV-File
+-h	help
+	opens this help file
+-d	delimiter
+	choose the used delimter of the CSV-File
 	Standard is Semicolon ";"
 	Some progams might use Comma "," or Colon ":"
--s	choose the Decimal separator
+-s	seperator
+	choose the Decimal separator
 	Standard is Comma ","
 	Some reginal settings might prefer Comma ","
+-c	current folder
+	narrow the search for the currend folder
+	won't search any subfolders
  
 planned:
 trennzeichen CSV d delimiter
