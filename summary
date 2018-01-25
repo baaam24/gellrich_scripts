@@ -17,12 +17,14 @@
 VERSION="0.1"
 USERNAME=`whoami`
 DIR=`pwd`
+#default settings: these may be changed by some arguments
 CSVFILENAME="summary.csv"
 CSVFILENAME_BKUP="summary_bkup.csv"
 CSVDELIM=";"
 DECISEP="."
 SCRIPTDIR=`dirname $(readlink -f ${0})`
 MAXFILES=25 # maximal files summary will read without extra user input
+DEPTH=-1 #depth of search -1=all 0=current n=n subfolders
 
 function prnt_error {
 echo -e "\033[0;31m ERROR ! stopping script \033[0m "
@@ -39,7 +41,7 @@ echo -e -n "\033[0;32m OK: \033[0m "
 
 ## here schould be some sort of check for arguments
 
-while getopts ":hd:s:" OPTION; do
+while getopts ":hd:s:c" OPTION; do
   case $OPTION in
     h) 
 	vim $SCRIPTDIR/help_summary.txt  
@@ -50,6 +52,9 @@ while getopts ":hd:s:" OPTION; do
 	;;
 	s)
 	DECISEP=$OPTARG
+	;;
+	c)
+	DEPTH=0
 	;;
     \?)
     echo "Invaliddsfasdfsdaf option: -$OPTARG" >&2
@@ -64,7 +69,20 @@ done
 # show welcome message
 echo "summary version $VERSION  "
 
-LIST=`find -name "*.out"`
+
+#Defining the depth of search
+case $DEPTH in
+	-1)
+	LIST=`find -name "*.out"`
+	echo "searching in all subfolders"
+	;;
+	0)
+	LIST=`ls -la | grep ".out" | awk '{print $9}'`
+	echo "searching in only the currend folder"
+	;;
+esac
+
+
 LISTARR=($LIST)
 
 
