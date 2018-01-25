@@ -1,5 +1,21 @@
-#zweiter test
 #!/bin/bash
+
+
+#####################################################################
+#Flag fuer das Ausgeben des Hilfe Textfiles
+#####################################################################
+
+while getopts "h" OPTION
+do
+    case $OPTION in
+    h)
+ 	help_pfad=$(dirname $0)
+	vim "$help_pfad/help_out2xyz.txt" 
+        exit
+        ;;
+    esac
+done 
+
 
 ##############################################################
 #Abbruch des Skripts, wenn kein Argument übergeben wurde
