@@ -1,6 +1,6 @@
 #!/bin/bash
 
-
+#testen ob github mit pullen ohne account funktioniert
 #####################################################################
 #Flag fuer das Ausgeben des Hilfe Textfiles
 #####################################################################
@@ -18,7 +18,7 @@ done
 
 
 ##############################################################
-#Abbruch des Skripts, wenn kein Argument übergeben wurde
+#Abbruch des Skripts, wenn kein Argument Ã¼bergeben wurde
 ##############################################################
 
 if [ -z $1 ]; then
@@ -47,7 +47,7 @@ NATOMS=`grep -m 1 "NAtoms=" $1 | awk '{print $2}' | sed -e 's/ //g'`
 COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $1 ` #read the coordinates used for the frequency computation
 
 ##############################################################
-#Das Skript erkennt, ob eine Frequenzrechnung ausgeführt wurde
+#Das Skript erkennt, ob eine Frequenzrechnung ausgefÃ¼hrt wurde
 #Falls nicht wird es beendet
 ##############################################################
 
