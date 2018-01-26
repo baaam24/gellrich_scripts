@@ -1,12 +1,11 @@
-This is the help file for summary.sh
+This is the help file for summary
 
-Due to the fact that summary.sh is still in the progress of creation this halp-file may not be complete
+Due to the fact that summary.sh is still in the progress of creation this help-file may not be complete
 questions and ideas welcome _ tizian
 
-summary -
+summary - creates a summary your computations in a CSV-File
 
-summary.sh <arguments>
-
+summary <arguments>
 
 Following commands are supported:
 
@@ -23,11 +22,12 @@ Following commands are supported:
 -c	current folder
 	narrow the search for the currend folder
 	won't search any subfolders
- 
+-n	narrow depth of search
+	searches in n-Subfolders
+-v	verbose command line output
+	shows a verbose output
+	does not affect the CSV File
+	
 planned:
-trennzeichen CSV d delimiter
- Suchtiefe f suchtiefe in ordnern
- Suchtiefe c current folder
- trennzeichen dezimal s seperator
- Output auf dem terminal (klein mittel groß)
- max number abfrage
+orca 
+

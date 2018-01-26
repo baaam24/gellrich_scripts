@@ -24,7 +24,8 @@ CSVDELIM=";"
 DECISEP="."
 SCRIPTDIR=`dirname $(readlink -f ${0})`
 MAXFILES=25 # maximal files summary will read without extra user input
-DEPTH=-1 #depth of search -1=all 0=current n=n subfolders
+DEPTH=all #depth of search -1=all 0=current n=n subfolders
+VERBOSITY=0 # verbosity of the output on terminal
 
 function prnt_error {
 echo -e "\033[0;31m ERROR ! stopping script \033[0m "
@@ -38,10 +39,9 @@ function prnt_ok {
 echo -e -n "\033[0;32m OK: \033[0m "
 }
 
-
 ## here schould be some sort of check for arguments
 
-while getopts ":hd:s:c" OPTION; do
+while getopts ":hd:s:cn:v" OPTION; do
   case $OPTION in
     h) 
 	vim $SCRIPTDIR/help_summary.txt  
@@ -56,6 +56,12 @@ while getopts ":hd:s:c" OPTION; do
 	c)
 	DEPTH=0
 	;;
+	n)
+	DEPTH=$OPTARG
+	;;
+	v)
+	VERBOSITY=1
+	;;
     \?)
     echo "Invaliddsfasdfsdaf option: -$OPTARG" >&2
 	echo "For Help type: sumary -h"
@@ -67,21 +73,25 @@ done
 
 
 # show welcome message
-echo "summary version $VERSION  "
+echo -n "summary version $VERSION    "
 
 
 #Defining the depth of search
 case $DEPTH in
-	-1)
+	all)
 	LIST=`find -name "*.out"`
-	echo "searching in all subfolders"
+	echo "... searching in all subfolders"
 	;;
 	0)
 	LIST=`ls -la | grep ".out" | awk '{print $9}'`
-	echo "searching in only the currend folder"
+	echo "... searching in only the currend folder"
+	;;
+	*)
+	echo "... searching this and $DEPTH subfolders"
+	DEPTH=`echo "$DEPTH + 1"  | bc`
+	LIST=`find -maxdepth $DEPTH -name "*.out"`
 	;;
 esac
-
 
 LISTARR=($LIST)
 
@@ -89,19 +99,18 @@ LISTARR=($LIST)
 # asks for user reply if too much files are found
 
 if [ ${#LISTARR[@]} -gt $MAXFILES ]
-then echo "found a large amount of .out files"
-     echo "${#LISTARR[@]} / $MAXFILES"
-     read -p "Do you want to proceed ? " -n 1 -r 
+then
+	prnt_warning
+	echo "found a large amount of OUT files"
+	echo "${#LISTARR[@]} / $MAXFILES"
+	read -p "Do you want to proceed ? " -n 1 -r 
 		case $REPLY in
         [Yy]* ) echo "  OK";;
         [Nn]* ) echo ""; exit;;
         * ) echo "  Please answer Y or N."; exit ;;
         esac
-else echo "found ${#LISTARR[@]} .out files .. starting now"
+else echo "found ${#LISTARR[@]} OUT files ... starting now"
 fi
-
-echo "found ${#LISTARR[@]} .out files"
-
 
 
 ######################################################
@@ -140,7 +149,7 @@ fi
 }
 
 function find_NTerm {
- NTHERM=`grep -c "Normal termination of Gaussian" $name`
+ NTERM=`grep -c "Normal termination of Gaussian" $name`
 }
 
 function find_version {
@@ -168,9 +177,22 @@ TABLEHEAD="File name;method; basisset; E(el); ZP corr.; E corr.; H corr.; G corr
 echo "$TABLEHEAD" >> $CSVFILENAME
 
 ######################################################
-# actuale magic happens here
-echo "name METH BASIS ENERG ZPVE ENERG ENTHALPY GIBBS"
 
+
+#table headers for console output
+case $VERBOSITY in
+	0)
+	echo "name E(SCF)/ AU   #NT "
+	;;
+	1)
+	echo "$name $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
+	;;
+esac
+
+
+
+
+# actuale magic happens here
 for name in "${LISTARR[@]}" ; do
 
 find_methode
@@ -180,11 +202,26 @@ find_Nimag
 find_NTerm
 find_version
 find_runtime
-name=`echo $name | sed -e 's/\.//g' `
+#name=`echo $name | sed -e 's/\.//g' `
 
 
-echo "$name $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTHERM $PROG $REV $RUNTIME"
-echo "$name;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTHERM;$PROG;$REV;$RUNTIME" >> $CSVFILENAME
+
+#console output
+case $VERBOSITY in
+	0)
+	echo "$name $ENERG_EL $NTERM"
+	;;
+	1)
+	echo "$name $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
+	;;
+esac
+
+#echo "name METH BASIS ENERG ZPVE ENERG ENTHALPY GIBBS"
+#echo "$name $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
+
+# CSV Output
+
+echo "$name;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTERM;$PROG;$REV;$RUNTIME" >> $CSVFILENAME
 
 done
 
