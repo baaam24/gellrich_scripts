@@ -3,3 +3,4 @@ and submits them to ORCA or Gaussian16 (depends on the file suffix of the input-
 
 Set flags for alternative parameters:
 	-H Walltime in hours (Default 72)
+	-a Goes into every folder and submits inputs

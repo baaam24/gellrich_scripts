@@ -9,7 +9,7 @@ declare -a namen_ordner
 stunden=72:00:00
 
 
-while getopts "hH:" OPTION
+while getopts "ahH:" OPTION
 do
     case $OPTION in
     H)
@@ -20,6 +20,67 @@ do
 	vim "$help_pfad/help_submit.txt" 
         exit
         ;;
+    a)
+#################################################################
+#Wenn Flag a gew�hlt wird, geht das Skript in JEDEN Ordner und submittet
+#################################################################
+
+for folder in *
+do
+
+if [ -d $folder ]; then
+
+	cd $folder
+
+	input_gaussian=$(find -type f -name *.dat | wc -l)
+	input_orca=$(find -type f -name *.gjf | wc -l)
+
+#################################################################
+#Ueberprueft, ob keine Dateien, nur Gaussian16, nur ORCA oder 
+#Gaussian16 und ORCA Input-Dateien im Ordner sind
+#################################################################
+
+	if [[ "$input_gaussian" -eq 0 && "$input_orca" -eq 0 ]]; then
+		echo "###################################################################"
+		echo ""		
+		echo -e "\e[33mNo Input-files in folder $folder\e[39m"
+	fi 
+
+	if [[ "$input_gaussian" -gt 0 && "$input_orca" -eq 0 ]]; then
+		echo "###################################################################"
+		echo ""
+		echo -e "\e[92mGaussian16 Input-files in folder $folder\e[39m"
+		echo ""
+		gaussian16 $stunden
+	fi
+ 
+	if [[ "$input_gaussian" -eq 0 && "$input_orca" -gt 0 ]]; then
+		echo "###################################################################"
+		echo ""
+		echo -e "\e[92mORCA Input-files in folder $folder\e[39m"
+		echo ""
+		
+		for file in *.gjf; 
+		do
+			orca $file $stunden
+		done
+	fi 
+
+	if [[ "$input_gaussian" -gt 0 && "$input_orca" -gt 0 ]]; then
+		echo "###################################################################"
+		echo ""
+		echo -e "ORCA and Gaussian16 Input-files in folder $folder.\e[33m Nothing will be submitted.\e[39m"
+	fi 
+
+	cd ..
+	echo ""
+fi
+done
+	exit
+	;;
+#################################################################
+#Ende von Flag a
+#################################################################
     *)
 	echo -e "Usage of nonexistent flag.\033[31m Aborting.\033[0m"
 	exit
@@ -27,8 +88,7 @@ do
     esac
 done 
 
-
-
+echo hallo
 #################################################################
 #Schleife, die ueber jede Datei im entsprechenden Ordner geht
 #################################################################
@@ -51,8 +111,8 @@ if [ -d $file ]; then
 	
 #################################################################
 #Falls es sich um einen Konformerenordner handelt, wird der Name
-#in die temporäre Datei "ordner_datei.temp" geschrieben und die
-#Variable "anzahl_ordner" um 1 erhöht
+#in die temporaere Datei "ordner_datei.temp" geschrieben und die
+#Variable "anzahl_ordner" um 1 erhoeht
 #################################################################
 
 	if [ ! -z $test ]; then
