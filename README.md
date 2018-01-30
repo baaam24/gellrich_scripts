@@ -5,7 +5,7 @@ Use at own risk.
 
 Feel free to check the **** out of them and report errors, criticism and suggestions to Tizian and/or Max
 
-For getting the scripts to work on the different clusters please read INTRODUCTION.pdf 
+For getting the scripts to work on the different clusters please read INTRODUCTION.docx
 
 
 Overview:
