@@ -32,8 +32,8 @@ if [ -d $folder ]; then
 
 	cd $folder
 
-	input_gaussian=$(find -type f -name *.dat | wc -l)
-	input_orca=$(find -type f -name *.gjf | wc -l)
+	input_gaussian=$(find -maxdepth 1 -type f -name *.dat | wc -l)
+	input_orca=$(find -maxdepth 1 -type f -name *.gjf | wc -l)
 
 #################################################################
 #Ueberprueft, ob keine Dateien, nur Gaussian16, nur ORCA oder 
@@ -157,8 +157,8 @@ do
 #und speichert die Anzahl in den Variable "input_gaussian" und "input_orca"
 #################################################################
 	
-	input_gaussian=$(find -type f -name *.dat | wc -l)
-	input_orca=$(find -type f -name *.gjf | wc -l)
+	input_gaussian=$(find -maxdepth 1 -type f -name *.dat | wc -l)
+	input_orca=$(find -maxdepth 1 -type f -name *.gjf | wc -l)
 
 #################################################################
 #Ueberprueft, ob keine Dateien, nur Gaussian16, nur ORCA oder 
