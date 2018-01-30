@@ -4,7 +4,7 @@
 #Flag fuer das Ausgeben des Hilfe Textfiles
 #####################################################################
 
-while getopts "h" OPTION
+while getopts "ah" OPTION
 do
     case $OPTION in
     h)
@@ -12,6 +12,53 @@ do
 	vim "$help_pfad/help_conformere_org.txt" 
         exit
         ;;
+#####################################################################
+#Wenn Flag a gewaehlt wurde, erstellt das Skript von jeder Datei einen
+#Ordner mit demselben Namen und verschiebt sie darein
+#####################################################################
+    a)
+for file in *; 
+do
+
+leer=$(find -maxdepth 1 -type f)
+
+if [[ -z $leer ]]; then
+	echo -e "\e[31mNo files in this folder. Aborting.\e[39m"
+	exit
+fi 
+
+if [ -d $file ]; then
+	continue
+fi	
+
+dateiendung=$(echo $file | grep -o -E "(.xyz|.dat|.gjf)\>")
+
+if [ -z $dateiendung ]; then
+	echo -e "\e[33mFile $file is not an .xyz, .dat or .gjf file.\033[0m"
+	continue
+fi
+
+ordner_name=${file%.*}
+
+if [[ -d $ordner_name ]]; then
+	echo -e "\e[31mFolder $ordner_name already exists. Please check your files. Aborting.\e[39m"
+	exit
+fi
+
+echo -e "File \033[1;32m$file\033[0m is moved into the new created folder \033[1;32m$ordner_name\033[0m."
+
+mkdir $ordner_name
+mv $file $ordner_name
+
+
+done
+
+exit
+;;
+#####################################################################
+#Ende vom Code fuer Flag a
+#####################################################################
+
     *)
 	echo -e "Usage of nonexistent flag.\033[31m Aborting.\033[0m"
 	exit
@@ -74,7 +121,7 @@ if [ -n "$conf_number" ]; then
 #wird das Skript beendet
 #####################################################################
 	if [ -d $conf_number ]; then
-		echo -e "\e[31mFolder $conf_number exists already. Please check your files. Aborting.\e[39m"
+		echo -e "\e[31mFolder $conf_number already exists. Please check your files. Aborting.\e[39m"
 		exit
 	fi
 

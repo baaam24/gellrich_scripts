@@ -5,4 +5,8 @@ For every conformere file xyz, dat and gjf file a folder is created with the res
 conformere number and the file is moved into this folder
 
 Set flags for alternative parameters:
-	-h opens this helpfile
+	-h help
+		opens this helpfile
+	-a all
+		reads all filenames, creates folders with same name but without file end
+		and moves the file into it
