@@ -13,6 +13,10 @@ do
 	vim "$help_pfad/help_out2xyz.txt" 
         exit
         ;;
+*)
+	echo -e "Usage of nonexistent flag.\033[31m Aborting.\033[0m"
+	exit
+	;;
     esac
 done 
 
