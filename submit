@@ -9,7 +9,7 @@ declare -a namen_ordner
 stunden=72:00:00
 
 
-while getopts "ahH:" OPTION
+while getopts "hH:a" OPTION
 do
     case $OPTION in
     H)

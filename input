@@ -7,10 +7,15 @@ hauptspeicher=10000
 stunden=72
 ausfuehren=false
 route="# pbe1pbe/def2SV opt freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3"
+transition_state="false"
 
-while getopts "f:oH:n:m:hS" OPTION
+while getopts "f:otH:n:m:hS" OPTION
 do
 	case $OPTION in 
+	t)
+		transition_state="true"
+		route="# pbe1pbe/def2SV opt=(ts,noeigen,calcfc) freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3"
+		;;
 	f)
 		file=$OPTARG
 		;;
@@ -67,6 +72,10 @@ if [ -z "$dateiendung" ]; then
 	exit
 fi
  
+if [[ $transition_state = "true" && $program = orca ]]; then
+	echo -e "\033[31mTransition state with an ORCA single point calculations is not possible. Aborting.\033[0m"
+fi
+
 ################################################################
 #Falls es sich beim Input, um eine .out-Datei handelt, wird diese
 #in eine xyz-Datei umgewandelt
