@@ -5,10 +5,26 @@ or ORCA
 ! DLPNO-CCSD(T) NoUseSym def2-TZVP def2-TZVP/C tightscf
 
 Set flags for alternative parameters:
-	-f file for creating the input file (has to be an .xyz or .out file)
-	-S Submit calculation as DLPNO-CCSDT SP in ORCA (only on halo) (File will get an _SP suffix)
-	-n Used processors (Default 12)
-	-m Used main memory in MB (Default 10000)
-	-H Used walltime in hours (Default 72) when created input-file is subsequently submitted
-	-o created input file will be submitted to Gaussian16 or Orca
-	-h opens this help-file
+	-f file
+		file for creating the input file (has to be an .xyz or .out file)
+	
+	-S single point
+		Submit calculation as DLPNO-CCSDT SP in ORCA (only on halo) (File will get an _SP suffix)
+	
+	-t transition state
+		Creates Gaussian16 input file for TS [opt=(ts,calcfc,noeigen)] (File will get an TS_ prefix)
+	
+	-n number of processors
+		Used processors (Default 12)
+	
+	-m main memory
+		Used main memory in MB (Default 10000)
+	
+	-H hours
+		Used walltime in hours (Default 72) when created input-file is subsequently submitted
+	
+	-s submit
+		created input file will be submitted to Gaussian16 or Orca
+	
+	-h help
+		opens this help-file

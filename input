@@ -9,7 +9,7 @@ ausfuehren=false
 route="# pbe1pbe/def2SV opt freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3"
 transition_state="false"
 
-while getopts "f:otH:n:m:hS" OPTION
+while getopts "f:stH:n:m:hS" OPTION
 do
 	case $OPTION in 
 	t)
@@ -28,7 +28,7 @@ do
 	H)
 		stunden=$OPTARG
 		;;
-	o)
+	s)
 		ausfuehren=true
 		;;
 ###########################################################################################
@@ -71,9 +71,11 @@ if [ -z "$dateiendung" ]; then
 	echo "################################################################"
 	exit
 fi
- 
-if [[ $transition_state = "true" && $program = orca ]]; then
-	echo -e "\033[31mTransition state with an ORCA single point calculations is not possible. Aborting.\033[0m"
+
+if [ "$transition_state" = "true" ] && [ "$programm" = "orca" ]; then
+	echo -e "\033[31mTransition state with an ORCA single point calculation is not possible. Aborting.\033[0m"
+	echo "################################################################"
+	exit
 fi
 
 ################################################################
@@ -131,9 +133,25 @@ echo 'pufferzeile' >> $file
 
 sed -i 's/pufferzeile//g' $file
 
-mv $file ${file/.xyz}.dat
+######################################################################
+#Wenn ein TS-Input erstellt und die Datei noch kein TS-Präfix besitzt,
+#benennt das Skript die Datei mit dem Praefix TS_ um
+######################################################################
 
-echo -e "\033[1;32mGaussian16\033[0m input file \033[1;32m${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
+if [ "$transition_state" = "false" ]; then
+	mv $file ${file/.xyz}.dat
+	echo -e "\033[1;32mGaussian16\033[0m input file \033[1;32m${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
+else
+	ts_praefix=$(echo $file | grep -o 'TS_')
+	echo -e "\033[1;32mTransition State Gaussian16\033[0m input file for \033[1;32m ${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
+
+	if [ -z $ts_praefix ]; then
+		mv $file TS_${file/.xyz}.dat
+	else
+		mv $file ${file/.xyz}.dat
+	fi
+fi
+
 					fi
 ######################################################################
 #Ende des Erstellens der Gaussian-Inputstruktur
