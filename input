@@ -143,12 +143,24 @@ if [ "$transition_state" = "false" ]; then
 	echo -e "\033[1;32mGaussian16\033[0m input file \033[1;32m${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
 else
 	ts_praefix=$(echo $file | grep -o 'TS_')
+	prep_suffix=$(echo $file | grep -o '_prep')
+
 	echo -e "\033[1;32mTransition State Gaussian16\033[0m input file for \033[1;32m ${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
 
-	if [ -z $ts_praefix ]; then
+	if [ -z $ts_praefix ] && [ -z $prep_suffix ]; then
 		mv $file TS_${file/.xyz}.dat
-	else
+	fi
+
+	if [ -n $ts_praefix ] && [ -z $prep_suffix ]; then
 		mv $file ${file/.xyz}.dat
+	fi
+
+	if [ -z $ts_praefix ] && [ -n $prep_suffix ]; then
+		mv $file TS_${file/_prep.xyz}.dat
+	fi
+
+	if [ -n $ts_praefix ] && [ -n $prep_suffix ]; then
+		mv $file ${file/_prep.xyz}.dat
 	fi
 fi
 
