@@ -30,7 +30,7 @@ VERBOSITY=0 # verbosity of the output on terminal
 NOTES="none" # all kind of notes are kept in here
 
 function prnt_error {
-echo -e "\033[0;31m ERROR ! stopping script \033[0m "
+echo -e  "\033[0;31m ERROR ! stopping script \033[0m "
 }
 
 function prnt_warning {
@@ -65,7 +65,8 @@ while getopts ":hd:s:cn:v" OPTION; do
 	VERBOSITY=1
 	;;
     \?)
-    echo "Invaliddsfasdfsdaf option: -$OPTARG" >&2
+	prnt_error
+    echo "Invalid option: -$OPTARG" >&2
 	echo "For Help type: sumary -h"
 	exit
     ;;

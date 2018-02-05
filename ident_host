@@ -1,0 +1,13 @@
+#!/bin/bash
+#
+# small supplemental script to identify the host its running on
+
+IP=`wget http://ipecho.net/plain -O - -q ; echo`
+
+case $IP in
+  134.176.2.178 ) echo  "Skylla";;
+  134.176.10.42 ) echo  "HALO";;
+  141.2.213.61 ) echo  "LOEWE" ;;
+  134.176.10.214 ) echo "Tizian_test";;
+  *) echo  "unknown $IP";;
+esac
