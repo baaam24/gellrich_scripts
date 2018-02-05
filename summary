@@ -82,11 +82,11 @@ echo -n "summary version $VERSION    "
 #Defining the depth of search
 case $DEPTH in
 	all)
-	LIST=`find -name "*.out"`
+	LIST=`find ! -name 'slurm*.out' -name "*.out"`
 	echo "... searching in all subfolders"
 	;;
 	0)
-	LIST=`ls -la | grep ".out" | awk '{print $9}'`
+	LIST=`find -maxdepth 1 -name "*.out"`
 	echo "... searching in only the currend folder"
 	;;
 	*)
