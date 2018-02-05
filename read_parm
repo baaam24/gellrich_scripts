@@ -7,7 +7,7 @@
 pi=`echo "scale=10; 4*a(1)" | bc -l `
 
 arccos () {
-    scale=3
+    scale=15
     if (( $(echo "$1 == 0" | bc -l) )); then
         echo "a(1)*2" | bc -l
     elif (( $(echo "(-1 <= $1) && ($1 < 0)" | bc -l) )); then
@@ -70,9 +70,9 @@ echo "$dist"
 # distances between atoms:
 ########
 
-N_A=4  #one end
-N_B=33 # center
-N_C=5  # the other end
+N_A=33  #one end
+N_B=5 # center
+N_C=18  # the other end
 
 COORS_A=`sed -n ${N_A}p <<< "$COORDS"`
 COORS_B=`sed -n ${N_B}p <<< "$COORDS"`
