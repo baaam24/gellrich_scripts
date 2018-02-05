@@ -27,6 +27,7 @@ SCRIPTDIR=`dirname $(readlink -f ${0})`
 MAXFILES=25 # maximal files summary will read without extra user input
 DEPTH=all #depth of search -1=all 0=current n=n subfolders
 VERBOSITY=0 # verbosity of the output on terminal
+NOTES="none" # all kind of notes are kept in here
 
 function prnt_error {
 echo -e "\033[0;31m ERROR ! stopping script \033[0m "
@@ -135,19 +136,18 @@ PROGNAME="none"
 
 if [ "$IDENTORCA" = "0" ] & [ "$IDENTGAUSSIAN" = "1" ]
 	then
-	PROGID=1
 	PROGNAME="Gaussian"
 fi 
 
 if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
 	then
-	PROGID=2
 	PROGNAME="ORCA"
+	NOTES="ORCA_not_fully_implemented"
 fi
 }
 
 function find_methode { # gives the used Method
-if [ $PROGID = 1 ]
+if [ $PROGNAME = "Gaussian" ]
 	then
 	RAW=`grep -m 1 "GINC-" $FILEPATH | sed -e 's.\\\. .g'`
 	METH=` echo $RAW | awk '{print $5}'`
@@ -159,7 +159,7 @@ fi
 function find_energ { 
 ENERG_EL=`tac $FILEPATH | grep -m 1 "SCF Done:  " | awk '{print $5}'`
 
-if [ $PROGID = 2 ]
+if [ $PROGNAME = "ORCA" ]
 	then
 	ENERG_EL=`grep "FINAL SINGLE POINT ENERGY" $FILEPATH | awk '{print $5}'`
 fi
@@ -222,7 +222,9 @@ echo "$TABLEHEAD" >> $CSVFILEFILEPATH
 #table headers for console output
 case $VERBOSITY in
 	0)
-	echo "FILEPATH E(SCF)/ AU   #NT "
+	echo "      FILEPATH            |  E(SCF)/ AU     | NT | Program  |   notes"
+	echo "--------------------------+-----------------+----+----------+-------------- "
+	#     2_PBE0_D3_def2SVp_SP_DLP  | -1978.39679009  | 0  | ORCA     | none
 	;;
 	1)
 	echo "$FILEPATH $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
@@ -234,6 +236,8 @@ esac
 
 # actuale magic happens here
 for FILEPATH in "${LISTARR[@]}" ; do
+
+NOTES="none"
 
 ident_prog
 format_strings
@@ -252,7 +256,7 @@ find_runtime
 case $VERBOSITY in
 	0)
 	ENERG_EL_FORM=`echo "$ENERG_EL" | cut -c -14 `
-	printf '%-25s %-14s %-2s %-8s \n' $FILENAMFORMATTED $ENERG_EL_FORM $NTERM $PROGNAME| sed 's/   / \. /g'
+	printf '%-25s | %-15s | %-2s | %-8s | %-30s \n' $FILENAMFORMATTED $ENERG_EL_FORM $NTERM $PROGNAME $NOTES | sed 's/ / /g'
 	;;
 	1)
 	echo "$FILEPATH $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
