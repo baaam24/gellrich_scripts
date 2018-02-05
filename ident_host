@@ -5,9 +5,9 @@
 IP=`wget http://ipecho.net/plain -O - -q ; echo`
 
 case $IP in
-  134.176.2.178 ) echo  "Skylla";;
-  134.176.10.42 ) echo  "HALO";;
-  141.2.213.61 ) echo  "LOEWE" ;;
-  134.176.10.214 ) echo "Tizian_test";;
+  134.176.2.178 ) echo  "SKYLLA $IP";;
+  134.176.10.42 ) echo  "HALO $IP";;
+  141.2.213.61 ) echo  "LOEWE $IP" ;;
+  134.176.10.214 ) echo "Tizian_test $IP";;
   *) echo  "unknown $IP";;
 esac

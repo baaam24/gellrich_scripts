@@ -18,6 +18,8 @@
 VERSION="0.1"
 USERFILEPATH=`whoami`
 DIR=`pwd`
+HOST=`ident_host | awk '{print $1}'`
+HOSTIP=`ident_host | awk '{print $2}'`
 #default settings: these may be changed by some arguments
 CSVFILEFILEPATH="summary.csv"
 CSVFILEFILEPATH_BKUP="summary_bkup.csv"
@@ -27,7 +29,9 @@ SCRIPTDIR=`dirname $(readlink -f ${0})`
 MAXFILES=25 # maximal files summary will read without extra user input
 DEPTH=all #depth of search -1=all 0=current n=n subfolders
 VERBOSITY=0 # verbosity of the output on terminal
-NOTES="none" # all kind of notes are kept in here
+
+
+
 
 function prnt_error {
 echo -e  "\033[0;31m ERROR ! stopping script \033[0m "
@@ -86,13 +90,13 @@ case $DEPTH in
 	echo "... searching in all subfolders"
 	;;
 	0)
-	LIST=`find -maxdepth 1 -name "*.out"`
+	LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "*.out"`
 	echo "... searching in only the currend folder"
 	;;
 	*)
 	echo "... searching this and $DEPTH subfolders"
 	DEPTH=`echo "$DEPTH + 1"  | bc`
-	LIST=`find -maxdepth $DEPTH -name "*.out"`
+	LIST=`find -maxdepth $DEPTH ! -name 'slurm*.out' -name "*.out"`
 	;;
 esac
 
@@ -143,9 +147,10 @@ fi
 if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
 	then
 	PROGNAME="ORCA"
-	NOTES="ORCA_not_fully_implemented"
+	NOTES+="ORCA_not_fully_implemented"
 fi
 }
+
 
 function find_methode { # gives the used Method
 if [ $PROGNAME = "Gaussian" ]
@@ -158,7 +163,11 @@ fi
 }
 
 function find_energ { 
-ENERG_EL=`tac $FILEPATH | grep -m 1 "SCF Done:  " | awk '{print $5}'`
+
+if [ $PROGNAME = "Gaussian" ]
+	then
+	ENERG_EL=`tac $FILEPATH | grep -m 1 "SCF Done:  " | awk '{print $5}'`
+fi
 
 if [ $PROGNAME = "ORCA" ]
 	then
@@ -200,8 +209,32 @@ REV=`echo $RAW | awk '{print $8}' | sed 's/,//g'`
 }
 
 function find_runtime {
-RUNTIME=`tail $FILEPATH | grep " Job cpu time:" | awk '{print $4":"$6":"$8":" $10}'`
+
+if [ "$PROGNAME" = "Gaussian" ]
+	then
+	TEMP=`tail -n 7 $FILEPATH `
+	RUNTIME=`echo "$TEMP" | grep " Job cpu time:" | awk '{print $4":"$6":"$8":" $10}'`
+	
+	NT=`echo "$TEMP" | grep -c "Normal termination of Gaussian" `
+	ET=`echo "$TEMP" | grep -c "Error termination request processed"`
+	
+	if [ "$NT" = "1" ]
+		then
+		JOBSTATE="F-NT"
+		elif [ "$ET" = "1" ]
+		then
+		JOBSTATE="F-ET"
+		NOTES+=" Error_termination"
+		else
+		JOBSTATE="unknown"
+		NOTES+=" Job_running_or_crashed"
+	fi
+	
+fi
 }
+
+
+
 
 ######################################################
 # initialisation of the *.csv files
@@ -209,7 +242,8 @@ RUNTIME=`tail $FILEPATH | grep " Job cpu time:" | awk '{print $4":"$6":"$8":" $1
 echo "summary" > $CSVFILEFILEPATH #
 echo "user;$USERFILEPATH" >> $CSVFILEFILEPATH
 echo "directory;$DIR" >> $CSVFILEFILEPATH
-echo "host;$(hostname)" >> $CSVFILEFILEPATH
+echo "host;$HOST" >> $CSVFILEFILEPATH
+echo "host IP;$HOSTIP" >> $CSVFILEFILEPATH
 
 echo " " >> $CSVFILEFILEPATH
 
@@ -238,7 +272,7 @@ esac
 # actuale magic happens here
 for FILEPATH in "${LISTARR[@]}" ; do
 
-NOTES="none"
+NOTES=""
 
 ident_prog
 format_strings

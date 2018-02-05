@@ -1,0 +1,48 @@
+#!/bin/bash
+#
+# 
+# read parameters (distance, angle, or dihedral) out of struktures in .out files 
+# 
+
+
+
+NATOMS=`grep -m 1 "NAtoms=" $1 | awk '{print $2}' | sed -e 's/ //g'`
+COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $1 ` #read the coordinates used for the frequency computation
+COORDS=`echo "$COORDS_RAW" | sed -e 1D | sed -e 's/,0,/ /g' | sed -e 's/,-/ -/g' | sed -e 's/,/ /g' ` # some nice formatting
+
+
+N_A=3
+N_B=5
+
+COORS_A=`sed -n ${N_A}p <<< "$COORDS"`
+COORS_B=`sed -n ${N_B}p <<< "$COORDS"`
+
+A_TYPE=`echo "$COORS_A | awk '{print $1}'"`
+A_X=`echo "$COORS_A" | awk '{print $2}'`
+A_Y=`echo "$COORS_A" | awk '{print $3}'`
+A_Z=`echo "$COORS_A" | awk '{print $4}'`
+
+B_TYPE=`echo "$COORS_B | awk '{print $1}'"`
+B_X=`echo "$COORS_B" | awk '{print $2}'`
+B_Y=`echo "$COORS_B" | awk '{print $3}'`
+B_Z=`echo "$COORS_B" | awk '{print $4}'`
+
+# d:= sqrt( (x2-x1)^2 + (y2-y1)^1 + (z2-z1)^2  ) 
+# d = sqrt(    dx     +     dy     +    dz     ) 
+
+
+dx=`echo "( $A_X - $B_X)^2 " | bc `
+dy=`echo "( $A_Y - $B_Y)^2 " | bc `
+dz=`echo "( $A_Z - $B_Z)^2 " | bc `
+
+dist=`echo " sqrt( $dx + $dy + $dz) " | bc `
+echo "$dist"
+
+
+
+
+
+
+
+
+
