@@ -4,24 +4,47 @@
 # read parameters (distance, angle, or dihedral) out of struktures in .out files 
 # 
 
+pi=`echo "scale=10; 4*a(1)" | bc -l `
+
+arccos () {
+    scale=3
+    if (( $(echo "$1 == 0" | bc -l) )); then
+        echo "a(1)*2" | bc -l
+    elif (( $(echo "(-1 <= $1) && ($1 < 0)" | bc -l) )); then
+        echo "scale=${scale}; a(1)*4 - a(sqrt((1/($1^2))-1))" | bc -l
+    elif (( $(echo "(0 < $1) && ($1 <= 1)" | bc -l) )); then
+        echo "scale=${scale}; a(sqrt((1/($1^2))-1))" | bc -l
+    else
+        echo "input out of range"
+        return 1
+    fi
+}
 
 
+
+# find the XYZ-Coordinates of the stucture
 NATOMS=`grep -m 1 "NAtoms=" $1 | awk '{print $2}' | sed -e 's/ //g'`
 COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $1 ` #read the coordinates used for the frequency computation
 COORDS=`echo "$COORDS_RAW" | sed -e 1D | sed -e 's/,0,/ /g' | sed -e 's/,-/ -/g' | sed -e 's/,/ /g' ` # some nice formatting
 
 
-N_A=3
-N_B=5
+########
+# distances between atoms:
+########
+N_A=4
+N_B=33
 
+# reads the wanted line from the coordinates
 COORS_A=`sed -n ${N_A}p <<< "$COORDS"`
 COORS_B=`sed -n ${N_B}p <<< "$COORDS"`
 
+#extract expicit X, Y and Z coordinates of Atom A
 A_TYPE=`echo "$COORS_A | awk '{print $1}'"`
 A_X=`echo "$COORS_A" | awk '{print $2}'`
 A_Y=`echo "$COORS_A" | awk '{print $3}'`
 A_Z=`echo "$COORS_A" | awk '{print $4}'`
 
+#extract expicit X, Y and Z coordinates of Atom B
 B_TYPE=`echo "$COORS_B | awk '{print $1}'"`
 B_X=`echo "$COORS_B" | awk '{print $2}'`
 B_Y=`echo "$COORS_B" | awk '{print $3}'`
@@ -29,6 +52,8 @@ B_Z=`echo "$COORS_B" | awk '{print $4}'`
 
 # d:= sqrt( (x2-x1)^2 + (y2-y1)^1 + (z2-z1)^2  ) 
 # d = sqrt(    dx     +     dy     +    dz     ) 
+# https://de.serlo.org/mathe/geometrie/analytische-geometrie/abstaende-winkel/abstaende/abstand-zweier-punkte-berechnen
+# http://www.mathematik-oberstufe.de/vektoren/a/abstand-2p-in-r3.html
 
 
 dx=`echo "( $A_X - $B_X)^2 " | bc `
@@ -37,6 +62,85 @@ dz=`echo "( $A_Z - $B_Z)^2 " | bc `
 
 dist=`echo " sqrt( $dx + $dy + $dz) " | bc `
 echo "$dist"
+
+
+
+
+########
+# distances between atoms:
+########
+
+N_A=4  #one end
+N_B=33 # center
+N_C=5  # the other end
+
+COORS_A=`sed -n ${N_A}p <<< "$COORDS"`
+COORS_B=`sed -n ${N_B}p <<< "$COORDS"`
+COORS_C=`sed -n ${N_C}p <<< "$COORDS"`
+
+#extract expicit X, Y and Z coordinates of Atom A
+A_TYPE=`echo "$COORS_A | awk '{print $1}'"`
+A_X=`echo "$COORS_A" | awk '{print $2}'`
+A_Y=`echo "$COORS_A" | awk '{print $3}'`
+A_Z=`echo "$COORS_A" | awk '{print $4}'`
+
+#extract expicit X, Y and Z coordinates of Atom B
+B_TYPE=`echo "$COORS_B | awk '{print $1}'"`
+B_X=`echo "$COORS_B" | awk '{print $2}'`
+B_Y=`echo "$COORS_B" | awk '{print $3}'`
+B_Z=`echo "$COORS_B" | awk '{print $4}'`
+
+#extract expicit X, Y and Z coordinates of Atom B
+C_TYPE=`echo "$COORS_C | awk '{print $1}'"`
+C_X=`echo "$COORS_C" | awk '{print $2}'`
+C_Y=`echo "$COORS_C" | awk '{print $3}'`
+C_Z=`echo "$COORS_C" | awk '{print $4}'`
+
+
+# https://de.serlo.org/mathe/geometrie/analytische-geometrie/grundbegriffe-vektorrechnung/vektorbegriff/vektor-zwischen-zwei-punkten-berechnen
+#calculate vector BA
+
+BA_X=`echo "$A_X - $B_X "| bc`
+BA_Y=`echo "$A_Y - $B_Y "| bc`
+BA_Z=`echo "$A_Z - $B_Z "| bc`
+
+#calculate vector BC
+
+BC_X=`echo "$C_X - $B_X "| bc`
+BC_Y=`echo "$C_Y - $B_Y "| bc`
+BC_Z=`echo "$C_Z - $B_Z "| bc`
+
+#skalarprodukt der vektoren
+
+# BA . BC
+
+BA_BC=`echo "$BA_X * $BC_X   +   $BA_Y * $BC_Y    +   $BA_Z * $BC_Z" | bc `
+
+echo " skalarprod $BA_BC"
+
+len_BA=`echo "sqrt( $BA_X^2 + $BA_Y^2 + $BA_Z^2 )" | bc`
+len_BC=`echo "sqrt( $BC_X^2 + $BC_Y^2 + $BC_Z^2 )" | bc`
+
+
+echo "längen $len_BA $len_BC"
+
+bruch=`echo "  $BA_BC / ( $len_BA * $len_BC ) " | bc -l `
+
+echo "bruch $bruch"
+
+
+
+angl_rad=`arccos $bruch`
+
+
+
+
+angl_deg=`echo " (360 / (2 * $pi)) * $angl_rad " | bc -l `
+
+
+echo "winkel rad $angl_rad"
+echo " winkel grad $angl_deg" 	
+echo "pi $pi"
 
 
 
