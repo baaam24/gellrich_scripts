@@ -16,20 +16,21 @@
 
 # difine variables
 VERSION="0.1"
-USERNAME=`whoami`
+USERFILEPATH=`whoami`
 DIR=`pwd`
 #default settings: these may be changed by some arguments
-CSVFILENAME="summary.csv"
-CSVFILENAME_BKUP="summary_bkup.csv"
+CSVFILEFILEPATH="summary.csv"
+CSVFILEFILEPATH_BKUP="summary_bkup.csv"
 CSVDELIM=";"
 DECISEP="."
 SCRIPTDIR=`dirname $(readlink -f ${0})`
 MAXFILES=25 # maximal files summary will read without extra user input
 DEPTH=all #depth of search -1=all 0=current n=n subfolders
 VERBOSITY=0 # verbosity of the output on terminal
+NOTES="none" # all kind of notes are kept in here
 
 function prnt_error {
-echo -e "\033[0;31m ERROR ! stopping script \033[0m "
+echo -e  "\033[0;31m ERROR ! stopping script \033[0m "
 }
 
 function prnt_warning {
@@ -64,7 +65,8 @@ while getopts ":hd:s:cn:v" OPTION; do
 	VERBOSITY=1
 	;;
     \?)
-    echo "Invaliddsfasdfsdaf option: -$OPTARG" >&2
+	prnt_error
+    echo "Invalid option: -$OPTARG" >&2
 	echo "For Help type: sumary -h"
 	exit
     ;;
@@ -117,65 +119,103 @@ fi
 ######################################################
 #            Functions for reading various stuff
 
+function format_strings { # formats stuff like the full path to the file, the dir in which the file is stored and the filename
+FILENAME=`echo " $FILEPATH" | sed -e 's@\/@ @g' | awk '{print $NF}'`
+FILENAMFORMATTED=`echo "$FILENAME" | cut -c -24 `
+
+FULLPATH=$FILEPATH 
+}
+
+function ident_prog { # identify the programm (gaussian, orca, ...) that created this OUT file
+#orca:
+FILEHEAD=`head -3 $FILEPATH `
+IDENTORCA=`echo "$FILEHEAD"| grep -c "        * O   R   C   A *"`
+IDENTGAUSSIAN=`echo "$FILEHEAD"| grep -c " Entering Gaussian System, Link 0"`
+
+PROGID=0
+PROGNAME="none"
+
+if [ "$IDENTORCA" = "0" ] & [ "$IDENTGAUSSIAN" = "1" ]
+	then
+	PROGNAME="Gaussian"
+fi 
+
+if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
+	then
+	PROGNAME="ORCA"
+	NOTES="ORCA_not_fully_implemented"
+fi
+}
+
 function find_methode { # gives the used Method
-RAW=`grep -m 1 "GINC-" $name | sed -e 's.\\\. .g'`
-METH=` echo $RAW | awk '{print $5}'`
-BASIS=`echo $RAW | awk '{print $6}'`
+if [ $PROGNAME = "Gaussian" ]
+	then
+	RAW=`grep -m 1 "GINC-" $FILEPATH | sed -e 's.\\\. .g'`
+	METH=` echo $RAW | awk '{print $5}'`
+	BASIS=`echo $RAW | awk '{print $6}'`
+fi
+
 }
 
 function find_energ { 
-ENERG_EL=`tac $name | grep -m 1 "SCF Done:  " | awk '{print $5}'`
+ENERG_EL=`tac $FILEPATH | grep -m 1 "SCF Done:  " | awk '{print $5}'`
+
+if [ $PROGNAME = "ORCA" ]
+	then
+	ENERG_EL=`grep "FINAL SINGLE POINT ENERGY" $FILEPATH | awk '{print $5}'`
+fi
+
 }
 
 function find_ther_corr { # finds the themal corrections for electronic Energy
- ZPVE=`grep "Zero-point correction=" $name | awk '{print $3}'`
- RAW=`grep -A 8 "Zero-point correction=" $name| awk 'NF>1{print $NF}'`
+ ZPVE=`grep "Zero-point correction=" $FILEPATH | awk '{print $3}'`
+ RAW=`grep -A 8 "Zero-point correction=" $FILEPATH| awk 'NF>1{print $NF}'`
  RAWARRAY=($RAW)
  
  ENERG_THERM=${RAWARRAY[1]}
  ENTHALPY=${RAWARRAY[2]}
  GIBBS=${RAWARRAY[3]}
 
-#ZPVE=`grep "Zero-point correction=" $name | awk '{print $3}'`
-#ENERG=`grep "Thermal correction to Energy=" $name | awk '{print $5}'`
-#ENTHALPY=`grep "Thermal correction to Enthalpy= " $name | awk '{print $5}'`
-#GIBBS=`grep "Thermal correction to Gibbs Free Energy= " $name | awk '{print $7}'`
+#ZPVE=`grep "Zero-point correction=" $FILEPATH | awk '{print $3}'`
+#ENERG=`grep "Thermal correction to Energy=" $FILEPATH | awk '{print $5}'`
+#ENTHALPY=`grep "Thermal correction to Enthalpy= " $FILEPATH | awk '{print $5}'`
+#GIBBS=`grep "Thermal correction to Gibbs Free Energy= " $FILEPATH | awk '{print $7}'`
 }
 
 function find_Nimag {
-if  [ -z `grep -i -m 1 "imaginary frequencies (negative Signs" $name | awk '{print $2}'` ]
+if  [ -z `grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH | awk '{print $2}'` ]
 then IMAG="0"
-else IMAG="`grep -i -m 1 "imaginary frequencies (negative Signs" $name | awk '{print $2}'`"
+else IMAG="`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH | awk '{print $2}'`"
 fi
 }
 
 function find_NTerm {
- NTERM=`grep -c "Normal termination of Gaussian" $name`
+ NTERM=`grep -c "Normal termination of Gaussian" $FILEPATH`
 }
 
 function find_version {
-RAW=`grep -m 1 -A 2 "Cite this work as:" $name`
+RAW=`grep -m 1 -A 2 "Cite this work as:" $FILEPATH`
 PROG=`echo $RAW | awk '{print $5 $6}' | sed 's/,//g'`
 REV=`echo $RAW | awk '{print $8}' | sed 's/,//g'`
 }
 
 function find_runtime {
-RUNTIME=`tail $name | grep " Job cpu time:" | awk '{print $4":"$6":"$8":" $10}'`
+RUNTIME=`tail $FILEPATH | grep " Job cpu time:" | awk '{print $4":"$6":"$8":" $10}'`
 }
 
 ######################################################
 # initialisation of the *.csv files
 
-echo "summary" > $CSVFILENAME #
-echo "user;$USERNAME" >> $CSVFILENAME
-echo "directory;$DIR" >> $CSVFILENAME
-echo "host;$(hostname)" >> $CSVFILENAME
+echo "summary" > $CSVFILEFILEPATH #
+echo "user;$USERFILEPATH" >> $CSVFILEFILEPATH
+echo "directory;$DIR" >> $CSVFILEFILEPATH
+echo "host;$(hostname)" >> $CSVFILEFILEPATH
 
-echo " " >> $CSVFILENAME
+echo " " >> $CSVFILEFILEPATH
 
-TABLEHEAD="File name;method; basisset; E(el); ZP corr.; E corr.; H corr.; G corr.; imaginary frequencies; Normal terminations; programm; Revison; Runtime"
+TABLEHEAD="File FILEPATH;method; basisset; E(el); ZP corr.; E corr.; H corr.; G corr.; imaginary frequencies; Normal terminations; programm; Revison; Runtime"
 
-echo "$TABLEHEAD" >> $CSVFILENAME
+echo "$TABLEHEAD" >> $CSVFILEFILEPATH
 
 ######################################################
 
@@ -183,10 +223,12 @@ echo "$TABLEHEAD" >> $CSVFILENAME
 #table headers for console output
 case $VERBOSITY in
 	0)
-	echo "name E(SCF)/ AU   #NT "
+	echo "      FILEPATH            |  E(SCF)/ AU     | NT | Program  |   notes"
+	echo "--------------------------+-----------------+----+----------+-------------- "
+	#     2_PBE0_D3_def2SVp_SP_DLP  | -1978.39679009  | 0  | ORCA     | none
 	;;
 	1)
-	echo "$name $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
+	echo "$FILEPATH $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
 	;;
 esac
 
@@ -194,8 +236,12 @@ esac
 
 
 # actuale magic happens here
-for name in "${LISTARR[@]}" ; do
+for FILEPATH in "${LISTARR[@]}" ; do
 
+NOTES="none"
+
+ident_prog
+format_strings
 find_methode
 find_energ
 find_ther_corr
@@ -203,26 +249,27 @@ find_Nimag
 find_NTerm
 find_version
 find_runtime
-#name=`echo $name | sed -e 's/\.//g' `
+#FILEPATH=`echo $FILEPATH | sed -e 's/\.//g' `
 
 
 
 #console output
 case $VERBOSITY in
 	0)
-	echo "$name $ENERG_EL $NTERM"
+	ENERG_EL_FORM=`echo "$ENERG_EL" | cut -c -14 `
+	printf '%-25s | %-15s | %-2s | %-8s | %-30s \n' $FILENAMFORMATTED $ENERG_EL_FORM $NTERM $PROGNAME $NOTES | sed 's/ / /g'
 	;;
 	1)
-	echo "$name $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
+	echo "$FILEPATH $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
 	;;
 esac
 
-#echo "name METH BASIS ENERG ZPVE ENERG ENTHALPY GIBBS"
-#echo "$name $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
+#echo "FILEPATH METH BASIS ENERG ZPVE ENERG ENTHALPY GIBBS"
+#echo "$FILEPATH $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
 
 # CSV Output
 
-echo "$name;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTERM;$PROG;$REV;$RUNTIME" >> $CSVFILENAME
+echo "$FILEPATH;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTERM;$PROG;$REV;$RUNTIME" >> $CSVFILEFILEPATH
 
 done
 
@@ -233,17 +280,17 @@ done
 
 if [ "$CSVDELIM" != ";" ]
 then
-	cp $CSVFILENAME $CSVFILENAME_BKUP
-	awk '$1=$1' FS=";" OFS="$CSVDELIM" $CSVFILENAME_BKUP > $CSVFILENAME
+	cp $CSVFILEFILEPATH $CSVFILEFILEPATH_BKUP
+	awk '$1=$1' FS=";" OFS="$CSVDELIM" $CSVFILEFILEPATH_BKUP > $CSVFILEFILEPATH
 fi
 
 #change the decimal seperator
 
 if [ "DECISEP" != "." ]
 then
-	cp $CSVFILENAME $CSVFILENAME_BKUP
-	sed "s/\./$DECISEP/g" $CSVFILENAME_BKUP > $CSVFILENAME
-	#awk '$1=$1' FS=";" OFS="$CSVDELIM" $CSVFILENAME_BKUP > $CSVFILENAME
+	cp $CSVFILEFILEPATH $CSVFILEFILEPATH_BKUP
+	sed "s/\./$DECISEP/g" $CSVFILEFILEPATH_BKUP > $CSVFILEFILEPATH
+	#awk '$1=$1' FS=";" OFS="$CSVDELIM" $CSVFILEFILEPATH_BKUP > $CSVFILEFILEPATH
 fi
 
 
