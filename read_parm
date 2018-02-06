@@ -6,12 +6,9 @@
 
 
 File=$1
-
-
+Param=$2
 
 pi=`echo "scale=10; 4*a(1)" | bc -l `
-
-
 
 function arccos () {
     scale=15
@@ -40,8 +37,6 @@ function calc_dist () {
 ########
 # distances between atoms:
 ########
-N_A=4
-N_B=33
 
 # reads the wanted line from the coordinates
 COORS_A=`sed -n ${N_A}p <<< "$COORDS"`
@@ -79,9 +74,9 @@ function calc_angle () {
 # angle between 3 atoms:
 ########
 
-N_A=33  #one end
-N_B=5 # center
-N_C=18  # the other end
+#N_A=33  #one end
+#N_B=5 # center
+#N_C=18  # the other end
 
 COORS_A=`sed -n ${N_A}p <<< "$COORDS"`
 COORS_B=`sed -n ${N_B}p <<< "$COORDS"`
@@ -147,13 +142,12 @@ echo " winkel grad $angl_deg"
 
 }
 
-
 function calc_dihedral () {
 
-N_A=32
-N_B=28
-N_C=34
-N_D=35
+#N_A=32
+#N_B=28
+#N_C=34
+#N_D=35
 
 
 COORS_A=`sed -n ${N_A}p <<< "$COORDS"`
@@ -273,10 +267,43 @@ echo "$dihed_deg"
 
 
 
-find_XYZ
-calc_dist
-calc_angle
-calc_dihedral
+echo "$File $Param"
+
+Param=`echo "$Param" | sed 's/-/ /g' `
+Paramtype=`echo "$Param" | awk '{print $1}'`
+
+case $Paramtype in 
+	B)
+	N_A=`echo "$Param" | awk '{print $2}'`
+	N_B=`echo "$Param" | awk '{print $3}'`
+	find_XYZ
+	calc_dist
+	echo "bond lengt" ;;
+	A)
+	N_A=`echo "$Param" | awk '{print $2}'`
+	N_B=`echo "$Param" | awk '{print $3}'`
+	N_C=`echo "$Param" | awk '{print $4}'`
+	find_XYZ
+	calc_angle
+	echo "angle" ;;
+	
+	D)
+	N_A=`echo "$Param" | awk '{print $2}'`
+	N_B=`echo "$Param" | awk '{print $3}'`
+	N_C=`echo "$Param" | awk '{print $4}'`
+	N_D=`echo "$Param" | awk '{print $5}'`
+	find_XYZ
+	calc_dihedral
+	echo "diehdral" ;;
+	*)
+	echo "cannot read ! see readparm -h for help."
+esac
+
+
+#find_XYZ
+#calc_dist
+#calc_angle
+#calc_dihedral
 
 
 
