@@ -85,15 +85,7 @@ fi
 
 
 if [ $dateiendung = ".out" ]; then
-	echo -e "Input-File $file is an .out-File. Try to convert to .xyz."
-	
-	test=$(grep -i -o "Redundant internal coordinates found in file" $file)
-
-	if [[ -z $test ]]; then
-		echo -e "\033[31mNo frequency calculation was performed. Aborting.\033[0m"
-		echo "################################################################"
-		exit
-	fi
+	echo -e "Input-File $file is an .out-File. Convert to .xyz."
 
 	out2xyz $file
 	file=${file/.out}.xyz
@@ -145,22 +137,24 @@ else
 	ts_praefix=$(echo $file | grep -o 'TS_')
 	prep_suffix=$(echo $file | grep -o '_prep')
 
-	echo -e "\033[1;32mTransition State Gaussian16\033[0m input file for \033[1;32m ${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
-
-	if [ -z $ts_praefix ] && [ -z $prep_suffix ]; then
+	if [ "$ts_praefix" != "TS_" ] && [ "$prep_suffix" != "_prep" ]; then
 		mv $file TS_${file/.xyz}.dat
+		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
 	fi
 
-	if [ -n $ts_praefix ] && [ -z $prep_suffix ]; then
+	if [ "$ts_praefix" = "TS_" ] && [ "$prep_suffix" != "_prep" ]; then
 		mv $file ${file/.xyz}.dat
+		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
 	fi
 
-	if [ -z $ts_praefix ] && [ -n $prep_suffix ]; then
+	if [ "$ts_praefix" != "TS_" ] && [ "$prep_suffix" = "_prep" ]; then
 		mv $file TS_${file/_prep.xyz}.dat
+		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/_prep.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
 	fi
 
-	if [ -n $ts_praefix ] && [ -n $prep_suffix ]; then
+	if [ "$ts_praefix" = "TS_" ] && [ "$prep_suffix" = "_prep" ]; then
 		mv $file ${file/_prep.xyz}.dat
+		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/_prep.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
 	fi
 fi
 
@@ -168,6 +162,7 @@ fi
 ######################################################################
 #Ende des Erstellens der Gaussian-Inputstruktur
 ######################################################################
+
 ######################################################################
 #Falls die Flag -S gesetzt wurde, wird die ORCA-Inputstruktur fuer die
 #DLPNO-CCSDT-Rechnungen erstellt
