@@ -4,9 +4,16 @@
 # read parameters (distance, angle, or dihedral) out of struktures in .out files 
 # 
 
+
+File=$1
+
+
+
 pi=`echo "scale=10; 4*a(1)" | bc -l `
 
-arccos () {
+
+
+function arccos () {
     scale=15
     if (( $(echo "$1 == 0" | bc -l) )); then
         echo "a(1)*2" | bc -l
@@ -21,12 +28,12 @@ arccos () {
 	# dsjfasökfsödkfhdsjköhfjk
 }
 
-
 function find_XYZ () { # find the XYZ-Coordinates of the structure
 
-NATOMS=`grep -m 1 "NAtoms=" $1 | awk '{print $2}' | sed -e 's/ //g'`
-COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $1 ` #read the coordinates used for the frequency computation
+NATOMS=`grep -m 1 "NAtoms=" $File | awk '{print $2}' | sed -e 's/ //g'`
+COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $File ` #read the coordinates used for the frequency computation
 COORDS=`echo "$COORDS_RAW" | sed -e 1D | sed -e 's/,0,/ /g' | sed -e 's/,-/ -/g' | sed -e 's/,/ /g' ` # some nice formatting
+
 }
 
 function calc_dist () {
@@ -67,7 +74,7 @@ echo "$dist"
 
 }
 
- function calc_angle () {
+function calc_angle () {
 ########
 # angle between 3 atoms:
 ########
@@ -136,20 +143,140 @@ bruch=`echo "  $BA_BC / ( $len_BA * $len_BC ) " | bc -l `
 angl_rad=`arccos $bruch`
 angl_deg=`echo " (360 / (2 * $pi)) * $angl_rad " | bc -l `
 
-echo " winkel grad $angl_deg" 	
+echo " winkel grad $angl_deg" 
 
 }
 
 
 function calc_dihedral () {
 
+N_A=32
+N_B=28
+N_C=34
+N_D=35
 
+
+COORS_A=`sed -n ${N_A}p <<< "$COORDS"`
+COORS_B=`sed -n ${N_B}p <<< "$COORDS"`
+COORS_C=`sed -n ${N_C}p <<< "$COORDS"`
+COORS_D=`sed -n ${N_D}p <<< "$COORDS"`
+
+echo "$COORS_A"
+echo "$COORS_B"
+echo "$COORS_C"
+echo "$COORS_D"
+
+#extract expicit X, Y and Z coordinates of Atom A
+A_TYPE=`echo "$COORS_A | awk '{print $1}'"`
+A_X=`echo "$COORS_A" | awk '{print $2}'`
+A_Y=`echo "$COORS_A" | awk '{print $3}'`
+A_Z=`echo "$COORS_A" | awk '{print $4}'`
+
+#extract expicit X, Y and Z coordinates of Atom B
+B_TYPE=`echo "$COORS_B | awk '{print $1}'"`
+B_X=`echo "$COORS_B" | awk '{print $2}'`
+B_Y=`echo "$COORS_B" | awk '{print $3}'`
+B_Z=`echo "$COORS_B" | awk '{print $4}'`
+
+#extract expicit X, Y and Z coordinates of Atom B
+C_TYPE=`echo "$COORS_C | awk '{print $1}'"`
+C_X=`echo "$COORS_C" | awk '{print $2}'`
+C_Y=`echo "$COORS_C" | awk '{print $3}'`
+C_Z=`echo "$COORS_C" | awk '{print $4}'`
+
+#extract expicit X, Y and Z coordinates of Atom B
+D_TYPE=`echo "$COORS_D | awk '{print $1}'"`
+D_X=`echo "$COORS_D" | awk '{print $2}'`
+D_Y=`echo "$COORS_D" | awk '{print $3}'`
+D_Z=`echo "$COORS_D" | awk '{print $4}'`
+
+
+
+#vektoren der esten ebene (BA und BC)
+#calculate vector BA
+
+BA_X=`echo "$A_X - $B_X "| bc`
+BA_Y=`echo "$A_Y - $B_Y "| bc`
+BA_Z=`echo "$A_Z - $B_Z "| bc`
+
+#calculate vector BC
+
+BC_X=`echo "$C_X - $B_X "| bc`
+BC_Y=`echo "$C_Y - $B_Y "| bc`
+BC_Z=`echo "$C_Z - $B_Z "| bc`
+
+#Vektorprodukt
+
+N1_X=`echo "$BA_Y * $BC_Z - $BA_Z * $BC_Y" | bc`
+N1_Y=`echo "$BA_Z * $BC_X - $BA_X * $BC_Z" | bc`
+N1_Z=`echo "$BA_X * $BC_Y - $BA_Y * $BC_X" | bc`
+
+echo "$N1_X $N1_Y $N1_Z"
+
+
+
+#vektoren der esten ebene (CB und CD)
+#calculate vector CB
+
+CB_X=`echo "$C_X - $B_X "| bc`
+CB_Y=`echo "$C_Y - $B_Y "| bc`
+CB_Z=`echo "$C_Z - $B_Z "| bc`
+
+#calculate vector CD
+
+CD_X=`echo "$C_X - $D_X "| bc`
+CD_Y=`echo "$C_Y - $D_Y "| bc`
+CD_Z=`echo "$C_Z - $D_Z "| bc`
+
+
+N2_X=`echo "$CB_Y * $CD_Z - $CB_Z * $CD_Y" | bc `
+N2_Y=`echo "$CB_Z * $CD_X - $CB_X * $CD_Z" | bc `
+N2_Z=`echo "$CB_X * $CD_Y - $CB_Y * $CD_X" | bc `
+
+
+echo "$N2_X $N2_Y $N2_Z"
+
+
+
+
+
+#skalarprodukt der normalenvektoren
+N1_N2=`echo "$N1_X * $N2_X   +   $N1_Y * $N2_Y    +   $N1_Z * $N2_Z" | bc `
+
+
+
+
+#betrag der vektoren
+len_N1=`echo "sqrt( $N1_X^2 + $N1_Y^2 + $N1_Z^2 )" | bc`
+len_N2=`echo "sqrt( $N2_X^2 + $N2_Y^2 + $N2_Z^2 )" | bc`
+
+
+
+#https://www.mathebibel.de/winkel-zwischen-zwei-vektoren-online-rechner
+#
+#          -1 /     N1 * N2   \
+# phi = cos   |---------------|
+#             \  |N1| * |N2|  /
+
+bruch=`echo "  $N1_N2 / ( $len_N1 * $len_N2 ) " | bc -l `
+
+# umrechnung des Winkels
+dihed_rad=`arccos $bruch`
+dihed_deg=`echo " (360 / (2 * $pi)) * $dihed_rad " | bc -l `
+
+
+echo "$bruch"
+echo "$dihed_deg"
 
 
 }
 
 
 
+find_XYZ
+calc_dist
+calc_angle
+calc_dihedral
 
 
 
