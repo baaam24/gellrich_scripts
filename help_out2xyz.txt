@@ -1,8 +1,5 @@
 This script can convert .out files to .xyz-files. You have to give the .out-file as an argument
 when executing the script.
 
-The calculation which produced the .out-file had to have executed a frequency calculation otherwise
-this script aborts with an error message.
-
 Set flags for alternative parameters:
 	-h opens this helpfile
