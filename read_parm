@@ -18,16 +18,18 @@ arccos () {
         echo "input out of range"
         return 1
     fi
+	# dsjfasökfsödkfhdsjköhfjk
 }
 
 
+function find_XYZ () { # find the XYZ-Coordinates of the structure
 
-# find the XYZ-Coordinates of the stucture
 NATOMS=`grep -m 1 "NAtoms=" $1 | awk '{print $2}' | sed -e 's/ //g'`
 COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $1 ` #read the coordinates used for the frequency computation
 COORDS=`echo "$COORDS_RAW" | sed -e 1D | sed -e 's/,0,/ /g' | sed -e 's/,-/ -/g' | sed -e 's/,/ /g' ` # some nice formatting
+}
 
-
+function calc_dist () {
 ########
 # distances between atoms:
 ########
@@ -63,11 +65,11 @@ dz=`echo "( $A_Z - $B_Z)^2 " | bc `
 dist=`echo " sqrt( $dx + $dy + $dz) " | bc `
 echo "$dist"
 
+}
 
-
-
+ function () {
 ########
-# distances between atoms:
+# angle between 3 atoms:
 ########
 
 N_A=33  #one end
@@ -116,33 +118,27 @@ BC_Z=`echo "$C_Z - $B_Z "| bc`
 
 BA_BC=`echo "$BA_X * $BC_X   +   $BA_Y * $BC_Y    +   $BA_Z * $BC_Z" | bc `
 
-echo " skalarprod $BA_BC"
 
+#betrag der vektoren
 len_BA=`echo "sqrt( $BA_X^2 + $BA_Y^2 + $BA_Z^2 )" | bc`
 len_BC=`echo "sqrt( $BC_X^2 + $BC_Y^2 + $BC_Z^2 )" | bc`
 
 
-echo "längen $len_BA $len_BC"
+#https://www.mathebibel.de/winkel-zwischen-zwei-vektoren-online-rechner
+#
+#          -1 /     BA * BC   \
+# phi = cos   |---------------|
+#             \  |BA| * |BC|  /
 
 bruch=`echo "  $BA_BC / ( $len_BA * $len_BC ) " | bc -l `
 
-echo "bruch $bruch"
-
-
-
+# umrechnung des Winkels
 angl_rad=`arccos $bruch`
-
-
-
-
 angl_deg=`echo " (360 / (2 * $pi)) * $angl_rad " | bc -l `
 
-
-echo "winkel rad $angl_rad"
 echo " winkel grad $angl_deg" 	
-echo "pi $pi"
 
-
+}
 
 
 
