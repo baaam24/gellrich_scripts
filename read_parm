@@ -67,7 +67,7 @@ echo "$dist"
 
 }
 
- function () {
+ function calc_angle () {
 ########
 # angle between 3 atoms:
 ########
@@ -139,6 +139,17 @@ angl_deg=`echo " (360 / (2 * $pi)) * $angl_rad " | bc -l `
 echo " winkel grad $angl_deg" 	
 
 }
+
+
+function calc_dihedral () {
+
+
+
+
+}
+
+
+
 
 
 
