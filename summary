@@ -153,10 +153,14 @@ fi
 
 function find_methode { # gives the used Method
 if [ $PROGNAME = "Gaussian" ]
+then
+TEST=`grep -m 1 "GINC-" $FILEPATH `
+	if [ -n "$TEST" ]
 	then
 	RAW=`grep -m 1 "GINC-" $FILEPATH | sed -e 's.\\\. .g'`
 	METH=` echo $RAW | awk '{print $5}'`
 	BASIS=`echo $RAW | awk '{print $6}'`
+	fi
 fi
 
 }
@@ -257,7 +261,7 @@ fi
 }
 
 function reset_vars { # set all variables to NA to resolve issues in console output 
-NA="?"
+NA="-"
 
 METH="$NA" 
 BASIS="$NA" 
@@ -335,7 +339,8 @@ find_runtime
 case $VERBOSITY in
 	0)
 	ENERG_EL_FORM=`echo "$ENERG_EL" | cut -c -14 `
-	printf '%-25s | %-10s | %-8s | %-9s | %-1s | %-1s | %-8s | %-30s \n' $FILENAMFORMATTED $ENERG_EL_FORM $ZPVE $GIBBS $NTERM $IMAG $PROGNAME $NOTES | sed 's/ / /g'
+	printf '%-25s | %-10s | %-8s | %-9s | %-1s | %-1s | %-8s | %-30s \n' $FILENAMFORMATTED $ENERG_EL_FORM $ZPVE $GIBBS $NTERM $IMAG $PROGNAME $NOTES
+	#echo " $FILENAMFORMATTED $ENERG_EL_FORM $ZPVE $GIBBS $NTERM $IMAG $PROGNAME $NOTES "
 	;;
 	1)
 	echo "$FILEPATH $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
