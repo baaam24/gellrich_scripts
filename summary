@@ -187,7 +187,7 @@ then
 TEST=`grep -c -i "Zero-point correction=" $FILEPATH `
 	if [ "$TEST" != "0" ]
 	then
-	ZPVE=`grep "Zero-point correction=" $FILEPATH | awk '{print $3}'`
+	ZPVE=`grep -m 1 "Zero-point correction=" $FILEPATH | awk '{print $3}'`
 	RAW=`grep -A 8 "Zero-point correction=" $FILEPATH| awk 'NF>1{print $NF}'`
 	RAWARRAY=($RAW)
  
