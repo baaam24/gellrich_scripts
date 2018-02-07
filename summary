@@ -151,7 +151,6 @@ if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
 fi
 }
 
-
 function find_methode { # gives the used Method
 if [ $PROGNAME = "Gaussian" ]
 	then
@@ -177,35 +176,58 @@ fi
 }
 
 function find_ther_corr { # finds the themal corrections for electronic Energy
- ZPVE=`grep "Zero-point correction=" $FILEPATH | awk '{print $3}'`
- RAW=`grep -A 8 "Zero-point correction=" $FILEPATH| awk 'NF>1{print $NF}'`
- RAWARRAY=($RAW)
  
- ENERG_THERM=${RAWARRAY[1]}
- ENTHALPY=${RAWARRAY[2]}
- GIBBS=${RAWARRAY[3]}
+ 
+if [ $PROGNAME = "Gaussian" ]
+then
+TEST=`grep -c -i "Zero-point correction=" $FILEPATH `
+	if [ "$TEST" != "0" ]
+	then
+	ZPVE=`grep "Zero-point correction=" $FILEPATH | awk '{print $3}'`
+	RAW=`grep -A 8 "Zero-point correction=" $FILEPATH| awk 'NF>1{print $NF}'`
+	RAWARRAY=($RAW)
+ 
+	ENERG_THERM=${RAWARRAY[1]}
+	ENTHALPY=${RAWARRAY[2]}
+	GIBBS=${RAWARRAY[3]}
+	fi
+fi
 
-#ZPVE=`grep "Zero-point correction=" $FILEPATH | awk '{print $3}'`
-#ENERG=`grep "Thermal correction to Energy=" $FILEPATH | awk '{print $5}'`
-#ENTHALPY=`grep "Thermal correction to Enthalpy= " $FILEPATH | awk '{print $5}'`
-#GIBBS=`grep "Thermal correction to Gibbs Free Energy= " $FILEPATH | awk '{print $7}'`
 }
 
 function find_Nimag {
-if  [ -z `grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH | awk '{print $2}'` ]
-then IMAG="0"
-else IMAG="`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH | awk '{print $2}'`"
+
+if [ $PROGNAME = "Gaussian" ]
+then
+	if  [ -z `grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH` ]
+	then 
+	IMAG="0"
+	else 
+	IMAG="`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH | awk '{print $2}'`"
+	fi
 fi
+#then IMAG="0"
+	#else IMAG="`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH | awk '{print $2}'`"
+
 }
 
 function find_NTerm {
- NTERM=`grep -c "Normal termination of Gaussian" $FILEPATH`
+
+if [ $PROGNAME = "Gaussian" ]
+then
+	NTERM=`grep -c "Normal termination of Gaussian" $FILEPATH`
+fi
+
 }
 
 function find_version {
-RAW=`grep -m 1 -A 2 "Cite this work as:" $FILEPATH`
-PROG=`echo $RAW | awk '{print $5 $6}' | sed 's/,//g'`
-REV=`echo $RAW | awk '{print $8}' | sed 's/,//g'`
+
+if [ $PROGNAME = "Gaussian" ]
+then
+	RAW=`grep -m 1 -A 2 "Cite this work as:" $FILEPATH`
+	PROG=`echo $RAW | awk '{print $5 $6}' | sed 's/,//g'`
+	REV=`echo $RAW | awk '{print $8}' | sed 's/,//g'`
+fi
 }
 
 function find_runtime {
@@ -233,6 +255,24 @@ if [ "$PROGNAME" = "Gaussian" ]
 fi
 }
 
+function reset_vars { # set all variables to NA to resolve issues in console output 
+NA="?"
+
+METH="$NA" 
+BASIS="$NA" 
+ENERG_EL="$NA" 
+ZPVE="$NA" 
+ENERG_THERM="$NA" 
+ENTHALPY="$NA" 
+GIBBS="$NA" 
+IMAG="$NA" 
+NTERM="$NA" 
+PROG="$NA" 
+REV="$NA" 
+RUNTIME="$NA" 
+NTERM="$NA" 
+IMAG="$NA" 
+}
 
 
 
@@ -247,7 +287,7 @@ echo "host IP;$HOSTIP" >> $CSVFILEFILEPATH
 
 echo " " >> $CSVFILEFILEPATH
 
-TABLEHEAD="File FILEPATH;method; basisset; E(el); ZP corr.; E corr.; H corr.; G corr.; imaginary frequencies; Normal terminations; programm; Revison; Runtime"
+TABLEHEAD="Filepath;filename;method; basisset; E(el); ZP corr.; E corr.; H corr.; G corr.; imaginary frequencies; Normal terminations; programm; Revison; Runtime; Notes"
 
 echo "$TABLEHEAD" >> $CSVFILEFILEPATH
 
@@ -257,12 +297,12 @@ echo "$TABLEHEAD" >> $CSVFILEFILEPATH
 #table headers for console output
 case $VERBOSITY in
 	0)
-	echo "      FILEPATH            |  E(SCF)/ AU     | NT | Program  |   notes"
-	echo "--------------------------+-----------------+----+----------+-------------- "
-	#     2_PBE0_D3_def2SVp_SP_DLP  | -1978.39679009  | 0  | ORCA     | none
+	echo "      FILEPATH            |  E(SCF)/ AU    |  ZP      | G(korr)   |NT |IF |Program   |   notes"
+	echo "--------------------------+----------------+----------+-----------+---+---+----------+----------- "
+	#     1_PBE0_D3_def2SVp.out     | -1957.21230414 | 0.303797 | -0.335047 | 2 | 0 | Gaussian |
 	;;
 	1)
-	echo "$FILEPATH $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
+	echo "$FULLPATH $FILENAME $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
 	;;
 esac
 
@@ -273,6 +313,9 @@ esac
 for FILEPATH in "${LISTARR[@]}" ; do
 
 NOTES=""
+
+reset_vars
+
 
 ident_prog
 format_strings
@@ -291,19 +334,16 @@ find_runtime
 case $VERBOSITY in
 	0)
 	ENERG_EL_FORM=`echo "$ENERG_EL" | cut -c -14 `
-	printf '%-25s | %-15s | %-2s | %-8s | %-30s \n' $FILENAMFORMATTED $ENERG_EL_FORM $NTERM $PROGNAME $NOTES | sed 's/ / /g'
+	printf '%-25s | %-10s | %-8s | %-9s | %-1s | %-1s | %-8s | %-30s \n' $FILENAMFORMATTED $ENERG_EL_FORM $ZPVE $GIBBS $NTERM $IMAG $PROGNAME $NOTES | sed 's/ / /g'
 	;;
 	1)
 	echo "$FILEPATH $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
 	;;
 esac
 
-#echo "FILEPATH METH BASIS ENERG ZPVE ENERG ENTHALPY GIBBS"
-#echo "$FILEPATH $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
-
 # CSV Output
 
-echo "$FILEPATH;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTERM;$PROG;$REV;$RUNTIME" >> $CSVFILEFILEPATH
+echo "$FULLPATH;$FILENAME;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTERM;$PROG;$REV;$RUNTIME;$NOTES" >> $CSVFILEFILEPATH
 
 done
 
