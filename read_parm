@@ -7,8 +7,9 @@
 
 File=$1
 Param=$2
+Param_2=`echo "$Param" | sed 's/[-_]/ /g' `
 
-pi=`echo "scale=10; 4*a(1)" | bc -l `
+pi=`echo "scale=15; 4*a(1)" | bc -l `
 
 function arccos () {
     scale=15
@@ -235,13 +236,18 @@ echo "$N2_X $N2_Y $N2_Z"
 
 
 #skalarprodukt der normalenvektoren
+echo "$N1_X * $N2_X   +   $N1_Y * $N2_Y    +   $N1_Z * $N2_Z"
 N1_N2=`echo "$N1_X * $N2_X   +   $N1_Y * $N2_Y    +   $N1_Z * $N2_Z" | bc `
 
 
 
 
 #betrag der vektoren
+echo "sqrt( $N1_X^2 + $N1_Y^2 + $N1_Z^2 )"
 len_N1=`echo "sqrt( $N1_X^2 + $N1_Y^2 + $N1_Z^2 )" | bc`
+
+
+echo "sqrt( $N2_X^2 + $N2_Y^2 + $N2_Z^2 )"
 len_N2=`echo "sqrt( $N2_X^2 + $N2_Y^2 + $N2_Z^2 )" | bc`
 
 
@@ -252,6 +258,7 @@ len_N2=`echo "sqrt( $N2_X^2 + $N2_Y^2 + $N2_Z^2 )" | bc`
 # phi = cos   |---------------|
 #             \  |N1| * |N2|  /
 
+echo "  $N1_N2 / ( $len_N1 * $len_N2 ) " 
 bruch=`echo "  $N1_N2 / ( $len_N1 * $len_N2 ) " | bc -l `
 
 # umrechnung des Winkels
@@ -259,39 +266,36 @@ dihed_rad=`arccos $bruch`
 dihed_deg=`echo " (360 / (2 * $pi)) * $dihed_rad " | bc -l `
 
 
-echo "$bruch"
-echo "$dihed_deg"
+echo " bruch $bruch"
+echo " diehed: $dihed_deg"
 
 
 }
 
 
 
-echo "$File $Param"
+echo "$File $Param $Param_2"
 
-Param=`echo "$Param" | sed 's/-/ /g' `
-Paramtype=`echo "$Param" | awk '{print $1}'`
-
-case $Paramtype in 
-	B)
-	N_A=`echo "$Param" | awk '{print $2}'`
-	N_B=`echo "$Param" | awk '{print $3}'`
+case $Param in 
+	[Bb]* )
+	N_A=`echo "$Param_2 " | awk '{print $2}'`
+	N_B=`echo "$Param_2 " | awk '{print $3}'`
+	echo "atoms: $N_A $N_B"
 	find_XYZ
 	calc_dist
 	echo "bond lengt" ;;
-	A)
-	N_A=`echo "$Param" | awk '{print $2}'`
-	N_B=`echo "$Param" | awk '{print $3}'`
-	N_C=`echo "$Param" | awk '{print $4}'`
+	[Aa]*)
+	N_A=`echo "$Param_2 " | awk '{print $2}'`
+	N_B=`echo "$Param_2 " | awk '{print $3}'`
+	N_C=`echo "$Param_2 " | awk '{print $4}'`
 	find_XYZ
 	calc_angle
 	echo "angle" ;;
-	
-	D)
-	N_A=`echo "$Param" | awk '{print $2}'`
-	N_B=`echo "$Param" | awk '{print $3}'`
-	N_C=`echo "$Param" | awk '{print $4}'`
-	N_D=`echo "$Param" | awk '{print $5}'`
+	[Dd]*)
+	N_A=`echo "$Param_2 " | awk '{print $2}'`
+	N_B=`echo "$Param_2 " | awk '{print $3}'`
+	N_C=`echo "$Param_2 " | awk '{print $4}'`
+	N_D=`echo "$Param_2 " | awk '{print $5}'`
 	find_XYZ
 	calc_dihedral
 	echo "diehdral" ;;
