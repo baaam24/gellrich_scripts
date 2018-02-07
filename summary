@@ -167,9 +167,13 @@ fi
 
 function find_energ { 
 
-if [ $PROGNAME = "Gaussian" ]
+if [ $PROGNAME = "Gaussian" ] 
+then
+TEST=`grep -m 1 -c "SCF Done:  " $FILEPATH`
+	if [ "$TEST" != 0 ]
 	then
 	ENERG_EL=`tac $FILEPATH | grep -m 1 "SCF Done:  " | awk '{print $5}'`
+	fi
 fi
 
 if [ $PROGNAME = "ORCA" ]
@@ -302,9 +306,9 @@ echo "$TABLEHEAD" >> $CSVFILEFILEPATH
 #table headers for console output
 case $VERBOSITY in
 	0)
-	echo "      FILEPATH            |  E(SCF)/ AU    |  ZP      | G(korr)   |NT |IF |Program   |   notes"
-	echo "--------------------------+----------------+----------+-----------+---+---+----------+----------- "
-	#     1_PBE0_D3_def2SVp.out     | -1957.21230414 | 0.303797 | -0.335047 | 2 | 0 | Gaussian |
+	echo "      FILEPATH            |  E(SCF)    |  ZP      | G(korr)   |NT |IF |Program   |   notes"
+	echo "--------------------------+------------+----------+-----------+---+---+----------+----------- "
+	#     8_PBE0_D3_def2SVp_stacke  | -          | -        | -         | 0 | 0 | Gaussian | Job_running_or_crashed
 	;;
 	1)
 	echo "$FULLPATH $FILENAME $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
@@ -338,7 +342,7 @@ find_runtime
 #console output
 case $VERBOSITY in
 	0)
-	ENERG_EL_FORM=`echo "$ENERG_EL" | cut -c -14 `
+	ENERG_EL_FORM=`echo "$ENERG_EL" | cut -c -10 `
 	printf '%-25s | %-10s | %-8s | %-9s | %-1s | %-1s | %-8s | %-30s \n' $FILENAMFORMATTED $ENERG_EL_FORM $ZPVE $GIBBS $NTERM $IMAG $PROGNAME $NOTES
 	#echo " $FILENAMFORMATTED $ENERG_EL_FORM $ZPVE $GIBBS $NTERM $IMAG $PROGNAME $NOTES "
 	;;
