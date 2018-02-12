@@ -1,0 +1,7 @@
+ident_host help File:
+
+This script is a small untiliy, to identify the host on which a script is running, based on its IP-address.
+
+The output (echo) of this script are 2 words to be easily piped into awk or grep
+first word: Name of the cluster
+second word: fount (external) IP-address
