@@ -33,7 +33,7 @@ if [ -d $folder ]; then
 	cd $folder
 
 	input_gaussian=$(find -maxdepth 1 -type f -name *.dat | wc -l)
-	input_orca=$(find -maxdepth 1 -type f -name *.gjf | wc -l)
+	input_orca=$(find -maxdepth 1 -type f -name *.inp | wc -l)
 
 #################################################################
 #Ueberprueft, ob keine Dateien, nur Gaussian16, nur ORCA oder 
@@ -60,7 +60,7 @@ if [ -d $folder ]; then
 		echo -e "\e[92mORCA Input-files in folder $folder\e[39m"
 		echo ""
 		
-		for file in *.gjf; 
+		for file in *.inp; 
 		do
 			orca $file $stunden
 		done
@@ -153,12 +153,12 @@ do
 	cd $pfad
 
 #################################################################
-#Zählt die Anzahl der Gaussian16 und ORCA Input-Dateien im Ordner
+#Zaehlt die Anzahl der Gaussian16 und ORCA Input-Dateien im Ordner
 #und speichert die Anzahl in den Variable "input_gaussian" und "input_orca"
 #################################################################
 	
 	input_gaussian=$(find -maxdepth 1 -type f -name *.dat | wc -l)
-	input_orca=$(find -maxdepth 1 -type f -name *.gjf | wc -l)
+	input_orca=$(find -maxdepth 1 -type f -name *.inp | wc -l)
 
 #################################################################
 #Ueberprueft, ob keine Dateien, nur Gaussian16, nur ORCA oder 
@@ -185,7 +185,7 @@ do
 		echo -e "\e[92mORCA Input-files in folder ${namen_ordner[$var]}\e[39m"
 		echo ""
 		
-		for file in *.gjf; 
+		for file in *.inp; 
 		do
 			orca $file $stunden
 		done

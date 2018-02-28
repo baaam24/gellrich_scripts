@@ -179,9 +179,9 @@ sed -i "1i$route" $file
 	
 sed -i 's/pufferzeile//g' $file
 
-echo -e "\033[1;32mORCA\033[0m input file \033[1;32m${file/.xyz}_SP.gjf\033[0m is created from \033[1;32m$file\033[0m."
+echo -e "\033[1;32mORCA\033[0m input file \033[1;32m${file/.xyz}_SP.inp\033[0m is created from \033[1;32m$file\033[0m."
 
-mv $file ${file/.xyz}_SP.gjf
+mv $file ${file/.xyz}_SP.inp
 
 					fi
 ######################################################################
@@ -194,7 +194,7 @@ else
 	if [ $programm = gaussian ]; then
            gaussian16 $stunden:00:00
 	elif [ $programm = orca ]; then
-	   for file in *.gjf; do orca $file $stunden:00:00; done
+	   for file in *.inp; do orca $file $stunden:00:00; done
 	fi
 fi
 

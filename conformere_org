@@ -31,10 +31,10 @@ if [ -d $file ]; then
 	continue
 fi	
 
-dateiendung=$(echo $file | grep -o -E "(.xyz|.dat|.gjf)\>")
+dateiendung=$(echo $file | grep -o -E "(.xyz|.dat|.inp)\>")
 
 if [ -z $dateiendung ]; then
-	echo -e "\e[33mFile $file is not an .xyz, .dat or .gjf file.\033[0m"
+	echo -e "\e[33mFile $file is not an .xyz, .dat or .inp file.\033[0m"
 	continue
 fi
 
@@ -95,18 +95,18 @@ fi
 #####################################################################
 #"conf_number" speichert die Konformernummer der Datei
 #"dateiendung" speichert die Dateiendung, falls es sich bei der Datei
-#um eine xyz, dat oder gjf Datei handelt
+#um eine xyz, dat oder inp Datei handelt
 #####################################################################	
 
 conf_number=$(echo $file | grep -o -E "K{1}[[:digit:]]{2}")
-dateiendung=$(echo $file | grep -o -E "(.xyz|.dat|.gjf)\>")
+dateiendung=$(echo $file | grep -o -E "(.xyz|.dat|.inp)\>")
 
 #####################################################################
-#Falls es sich bei der Datei um keine xyz, dat oder gjf Datei handelt
+#Falls es sich bei der Datei um keine xyz, dat oder inp Datei handelt
 #wird die Iteration der Schleife uebersprungen
 #####################################################################
 if [ -z $dateiendung ]; then
-	echo -e "\e[33mFile $file is not an .xyz, .dat or .gjf file.\033[0m"
+	echo -e "\e[33mFile $file is not an .xyz, .dat or .inp file.\033[0m"
 	continue
 fi
 
