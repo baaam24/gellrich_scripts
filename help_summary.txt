@@ -17,7 +17,7 @@ Following commands are supported:
 	Some progams might use Comma "," or Colon ":"
 -s	seperator
 	choose the Decimal separator
-	Standard is Comma ","
+	Standard is  full stop (period ) "."
 	Some reginal settings might prefer Comma ","
 -c	current folder
 	narrow the search for the currend folder
