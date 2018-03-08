@@ -6,11 +6,15 @@
 
 HOST=`ident_host | awk '{print $1}'`
 NOW=`date '+%Y-%m-%d_%H:%M'`
-N_P=$HOME/tmp_qs/new.txt
-O_P=$HOME/tmp_qs/old.txt
+N_P=$HOME/.tmp_qs/new.txt
+O_P=$HOME/.tmp_qs/old.txt
 USER=`echo $USER`
 
 
+function line_0 {
+echo "-----------------------------------------------"
+     #  NEW  | 6    | 0    | 6    | 2018-02-14_13:30
+}
 function line_1 {
 echo "-------+------+------+------+------------------"
      #  NEW  | 6    | 0    | 6    | 2018-02-14_13:30
@@ -23,14 +27,14 @@ echo "       | R    | PD   | ALL  |                  "
 
 
 
-if [ -e "$HOME/tmp_qs" ]
+if [ -e "$HOME/.tmp_qs" ]
 	then
 	echo "QS: Queue Short"
 	head_1
 	line_1
 	else 
 	echo "QS not initialised"
-	mkdir $HOME/tmp_qs
+	mkdir $HOME/.tmp_qs
 	echo file initialised > $N_P
 	echo file initialised > $O_P
 fi
@@ -83,25 +87,25 @@ printf '  %-4s | %-4s | %-4s | %-4s | %-15s \n' OLD $OLD_RUN_JOBS $OLD_PND_JOBS 
 
 line_1
 
-sed  "1d" $O_P > $HOME/tmp_qs/jobs_old.txt
-sed  "1d" $N_P > $HOME/tmp_qs/jobs_new.txt
+sed  "1d" $O_P > $HOME/.tmp_qs/jobs_old.txt
+sed  "1d" $N_P > $HOME/.tmp_qs/jobs_new.txt
 
 
-diff $HOME/tmp_qs/jobs_old.txt $HOME/tmp_qs/jobs_new.txt  > $HOME/tmp_qs/diff.txt
+diff $HOME/.tmp_qs/jobs_old.txt $HOME/.tmp_qs/jobs_new.txt  > $HOME/.tmp_qs/diff.txt
 
 
 
 
-#DIFF_NEW=`grep ">" $HOME/tmp_qs/diff.txt`
-#DIFF_OLD=`grep "<" $HOME/tmp_qs/diff.txt`
+#DIFF_NEW=`grep ">" $HOME/.tmp_qs/diff.txt`
+#DIFF_OLD=`grep "<" $HOME/.tmp_qs/diff.txt`
 
 echo "new entries in queue:"
-grep ">" $HOME/tmp_qs/diff.txt
+grep ">" $HOME/.tmp_qs/diff.txt
 
 line_1
 
 echo "entrys no longer in queue: "
-grep "<" $HOME/tmp_qs/diff.txt
+grep "<" $HOME/.tmp_qs/diff.txt
 
 
 
