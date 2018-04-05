@@ -29,6 +29,7 @@ SCRIPTDIR=`dirname $(readlink -f ${0})`
 MAXFILES=25 # maximal files summary will read without extra user input
 DEPTH=all #depth of search -1=all 0=current n=n subfolders
 VERBOSITY=0 # verbosity of the output on terminal
+SI_vers=0 # which kind of SI file is written ( Default: 0 = none )
 
 
 
@@ -47,7 +48,7 @@ echo -e -n "\033[0;32m OK: \033[0m "
 
 ## here schould be some sort of check for arguments
 
-while getopts ":hd:s:cn:v" OPTION; do
+while getopts ":hd:s:cn:vi:" OPTION; do
   case $OPTION in
     h) 
 	vim $SCRIPTDIR/help_summary.txt  
@@ -67,6 +68,9 @@ while getopts ":hd:s:cn:v" OPTION; do
 	;;
 	v)
 	VERBOSITY=1
+	;;
+	i)
+	SI_vers=$OPTARG
 	;;
     \?)
 	prnt_error
@@ -165,6 +169,19 @@ fi
 
 }
 
+function find_coords {
+
+NATOMS=`grep -m 1 "NAtoms=" $FILEPATH | awk '{print $2}' | sed -e 's/ //g'`
+
+COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $FILEPATH ` #read the coordinates used for the frequency computation
+
+COORDS=`echo "$COORDS_RAW" | sed -e 1d | sed -e 's/,0,/,/g' | sed -e 's/ //g '  | sed -e 's/,/ /g' ` # some nice formatting
+
+COORDS_new=`printf '%-3s\t%-14s\t%-14s\t%-14s\n' $COORDS`
+
+#| sed -e 's/,-/    -/g' | sed -e 's/,/     /g' | sed -e "1ipufferzeile" | sed -e "1i$NATOMS" | sed -e 's/pufferzeile//g'
+}
+
 function find_energ { 
 
 if [ $PROGNAME = "Gaussian" ] 
@@ -229,6 +246,26 @@ fi
 
 }
 
+function find_charge {
+
+if [ $PROGNAME = "Gaussian" ] 
+	then
+	CHARGE=`grep -m 1 "Charge =" $FILEPATH | awk '{print $3}'`
+	MULITPL=`grep -m 1 "Charge =" $FILEPATH | awk '{print $6}'`
+
+fi
+
+if [ $PROGNAME = "ORCA" ]
+	then
+	CHARGE=`grep -m 1 "Total Charge" $FILEPATH | awk '{print $5}'`
+	MULITPL=`grep -m 1 "Multiplicity" $FILEPATH | awk '{print $5}'`
+fi
+
+
+
+
+}
+
 function find_version {
 
 if [ $PROGNAME = "Gaussian" ]
@@ -283,7 +320,37 @@ NTERM="$NA"
 IMAG="$NA" 
 }
 
+function gen_SI_v1 {
 
+find_charge
+find_coords
+
+echo -e  "Nummer: \t\t " >> SI.txt
+echo -e  "Dateiname: \t $FILENAMFORMATTED" >> SI.txt
+echo -e  "" >> SI.txt
+echo -e  "E(el.) / hartree : \t $ENERG_EL" >> SI.txt
+echo -e  "Methode: $METH / $BASIS" >> SI.txt
+echo -e  "" >> SI.txt
+echo -e  "Thermische Korrekturen / hartree" >> SI.txt
+echo -e  "ZPVE:  $ZPVE   " >> SI.txt
+echo -e  "E(therm.): $ENERG_THERM" >> SI.txt
+echo -e  "H(korr.): $ENTHALPY" >> SI.txt
+echo -e  "G(korr.): $GIBBS" >> SI.txt
+echo -e  "Imaginäre Frequenzen:  $IMAG" >> SI.txt
+echo -e  "" >> SI.txt
+echo -e  "Ladung: $CHARGE   Multiplizität: $MULITPL " >> SI.txt
+echo -e  "Koordinaten (X, Y, Z) / Angström " >> SI.txt
+echo -e  "$COORDS_new" >> SI.txt
+echo -e  "" >> SI.txt
+echo -e  "" >> SI.txt
+echo -e  "" >> SI.txt
+echo -e  "" >> SI.txt
+
+
+NOTES+="SI_written_(txt)"
+
+# $ENERG_THERM $ENTHALPY $GIBBS $IMAG
+}
 
 ######################################################
 # initialisation of the *.csv files
@@ -301,6 +368,22 @@ TABLEHEAD="Filepath;filename;method; basisset; E(el); ZP corr.; E corr.; H corr.
 echo "$TABLEHEAD" >> $CSVFILEFILEPATH
 
 ######################################################
+
+
+case $SI_vers in # checking for valid SI version
+	0) # no SI file is written (default)
+	;;
+	1) # SImple textfile
+	echo " " > SI.txt
+	;;
+	*)
+	prnt_warning 
+	echo "unknown SI version"
+	echo "no Si file will be generated" 
+	SI_vers=0
+	;;
+esac
+
 
 
 #table headers for console output
@@ -339,6 +422,25 @@ find_runtime
 
 
 
+#output to SI-file
+case $SI_vers in # checking for valid SI version
+	0) # no SI file is written (default)
+	;;
+	1) # SImple textfile
+	gen_SI_v1
+	;;
+	*)
+	prnt_error
+	echo "Error in SI generation. stopping"
+	exit
+	;;
+esac
+
+
+
+
+
+
 #console output
 case $VERBOSITY in
 	0)
@@ -354,6 +456,7 @@ esac
 # CSV Output
 
 echo "$FULLPATH;$FILENAME;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTERM;$PROG;$REV;$RUNTIME;$NOTES" >> $CSVFILEFILEPATH
+
 
 done
 
@@ -380,6 +483,11 @@ fi
 
 
 
+
+
+echo -e "$COORDS"  > coords.txt
+
+echo -e "$COORDS_new"  > coords_new.txt
 
 
 
