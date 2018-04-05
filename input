@@ -1,7 +1,7 @@
 #!/bin/bash
-#Test ob pullen funktioniert
 
 programm=gaussian
+anzahl_prozessoren_geaendert=false
 prozessoren=12
 hauptspeicher=10000
 stunden=72
@@ -21,6 +21,7 @@ do
 		;;
 	n)
 		prozessoren=$OPTARG
+		anzahl_prozessoren_geaendert=true
 		;;
 	m)
 		hauptspeicher=$OPTARG
@@ -35,6 +36,10 @@ do
 ############################# ORCA SP DLPNO-CCSDT-Calculation #############################
 ###########################################################################################
 	S)
+		if [ $anzahl_prozessoren_geaendert = false ]; then
+			prozessoren=8
+		fi
+			
 		programm=orca
 		route="! DLPNO-CCSD(T) NoUseSym def2-TZVP def2-TZVP/C tightscf"
 		;;
