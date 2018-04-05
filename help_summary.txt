@@ -27,7 +27,9 @@ Following commands are supported:
 -v	verbose command line output
 	shows a verbose output
 	does not affect the CSV File
-	
+-i	supporting Information
+	no SI file is written "0"
+	plain-text file is written "1"
 planned:
 orca 
 
