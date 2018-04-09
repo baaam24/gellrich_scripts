@@ -244,6 +244,13 @@ then
 	NTERM=`grep -c "Normal termination of Gaussian" $FILEPATH`
 fi
 
+if [ $PROGNAME = "ORCA" ]
+	then
+	NTERM=`grep -c "                            ****ORCA TERMINATED NORMALLY****" $FILEPATH`
+fi
+
+
+
 }
 
 function find_charge {
