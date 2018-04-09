@@ -246,7 +246,7 @@ fi
 
 if [ $PROGNAME = "ORCA" ]
 	then
-	NTERM=`grep -c "                            ****ORCA TERMINATED NORMALLY****" $FILEPATH`
+	NTERM=`grep -c "                          ****ORCA TERMINATED NORMALLY****"$FILEPATH`
 fi
 
 
