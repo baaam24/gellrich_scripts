@@ -489,12 +489,3 @@ fi
 
 
 
-
-
-
-echo -e "$COORDS"  > coords.txt
-
-echo -e "$COORDS_new"  > coords_new.txt
-
-
-
