@@ -70,6 +70,7 @@ case $HOST in
 	;;
 	SKYLLA)
 	shift_files; squeue_2
+	;;
 	*)
 	echo unknown host
 	exit
