@@ -332,6 +332,7 @@ function gen_SI_v1 {
 find_charge
 find_coords
 
+
 echo -e  "Nummer: \t\t " >> SI.txt
 echo -e  "Dateiname: \t $FILENAMFORMATTED" >> SI.txt
 echo -e  "" >> SI.txt
@@ -359,6 +360,38 @@ NOTES+="SI_written_(txt)"
 # $ENERG_THERM $ENTHALPY $GIBBS $IMAG
 }
 
+function gen_SI_v2 {
+
+find_charge
+find_coords
+
+COORDS_CSV=`echo "$COORDS_RAW" | sed -e 1d | sed -e 's/,0,/,/g' | sed -e 's/ //g '  | sed -e 's/,/;/g' `
+
+echo -e  "Nummer: ; " >> SI.CSV
+echo -e  "Dateiname: ; $FILENAMFORMATTED" >> SI.CSV
+echo -e  "" >> SI.CSV
+echo -e  "E(el.) / hartree : ; $ENERG_EL" >> SI.CSV
+echo -e  "Methode: ; $METH / $BASIS" >> SI.CSV
+echo -e  "" >> SI.CSV
+echo -e  "Thermische Korrekturen / hartree" >> SI.CSV
+echo -e  "ZPVE: ; $ZPVE ; E(therm.): ; $ENERG_THERM" >> SI.CSV
+echo -e  "H(korr.): ; $ENTHALPY ;G(korr.): ; $GIBBS" >> SI.CSV
+echo -e  "Imaginäre Frequenzen: ; $IMAG" >> SI.CSV
+echo -e  "" >> SI.CSV
+echo -e  "Ladung:  ; $CHARGE ; Multiplizität: ; $MULITPL " >> SI.CSV
+echo -e  "Koordinaten (X, Y, Z) / Angström " >> SI.CSV
+echo -e  " $COORDS_CSV " >> SI.CSV
+echo -e  "" >> SI.CSV
+echo -e  "" >> SI.CSV
+echo -e  "" >> SI.CSV
+echo -e  "" >> SI.CSV
+
+
+NOTES+="SI_written_(CSV)"
+
+}
+
+
 ######################################################
 # initialisation of the *.csv files
 
@@ -382,6 +415,9 @@ case $SI_vers in # checking for valid SI version
 	;;
 	1) # SImple textfile
 	echo " " > SI.txt
+	;;
+	2) #SI in CSV format
+	echo " SI generated with summary " > SI.CSV
 	;;
 	*)
 	prnt_warning 
@@ -436,6 +472,9 @@ case $SI_vers in # checking for valid SI version
 	1) # SImple textfile
 	gen_SI_v1
 	;;
+	2) #SI in CSV format
+	gen_SI_v2
+	;;
 	*)
 	prnt_error
 	echo "Error in SI generation. stopping"
@@ -486,6 +525,3 @@ then
 	sed "s/\./$DECISEP/g" $CSVFILEFILEPATH_BKUP > $CSVFILEFILEPATH
 	#awk '$1=$1' FS=";" OFS="$CSVDELIM" $CSVFILEFILEPATH_BKUP > $CSVFILEFILEPATH
 fi
-
-
-
