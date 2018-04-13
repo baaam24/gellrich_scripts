@@ -78,8 +78,8 @@ esac
 NEW_ALL_JOBS=` grep -c " *[0-9][0-9][0-9][0-9][0-9]* " $N_P `
 OLD_ALL_JOBS=` grep -c " *[0-9][0-9][0-9][0-9][0-9]* " $O_P `
 
-NEW_RUN_JOBS=` grep -c " *[R][ ][0-9][0-9][0-9]* " $N_P `
-OLD_RUN_JOBS=` grep -c " *[R][ ][0-9][0-9][0-9]* " $O_P `
+NEW_RUN_JOBS=` grep -c " *[rR][ ][0-9][0-9][0-9]* " $N_P `
+OLD_RUN_JOBS=` grep -c " *[rR][ ][0-9][0-9][0-9]* " $O_P `
 
 NEW_PND_JOBS=` grep -c " *[PD][ ][0-9][0-9][0-9]* " $N_P `
 OLD_PND_JOBS=` grep -c " *[PD][ ][0-9][0-9][0-9]* " $O_P `
