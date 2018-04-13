@@ -1,0 +1,7 @@
+This is the help file for qs
+
+qs gives you an quick overview of your running / and finished job
+
+
+
+

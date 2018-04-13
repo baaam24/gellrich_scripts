@@ -28,8 +28,9 @@ Following commands are supported:
 	shows a verbose output
 	does not affect the CSV File
 -i	supporting Information
-	no SI file is written "0"
-	plain-text file is written "1"
-planned:
-orca 
+	"0" no SI file  
+	"1" plain-text file is written 
+	"2" CSV-File is written 
+	
+
 

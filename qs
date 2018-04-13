@@ -9,6 +9,7 @@ NOW=`date '+%Y-%m-%d_%H:%M'`
 N_P=$HOME/.tmp_qs/new.txt
 O_P=$HOME/.tmp_qs/old.txt
 USER=`echo $USER`
+SCRIPTDIR=`dirname $(readlink -f ${0})`
 
 
 function line_0 {
@@ -23,6 +24,21 @@ function head_1 {
 echo "       | R    | PD   | ALL  |                  "
      #  NEW  | 6    | 0    | 6    | 2018-02-14_13:30
 }
+
+
+while getopts "h" OPTION; do
+  case $OPTION in
+    h) 
+	vim $SCRIPTDIR/help_qs.txt  
+	exit
+	;;
+	\?)
+    echo "Invalid option: -$OPTARG" >&2
+	echo "For Help type: qs -h"
+	exit
+    ;;
+  esac
+done
 
 
 
