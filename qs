@@ -49,6 +49,12 @@ function squeue_1 {
 squeue -u $USER -o "%.18i %.9P %.20j %.8u %.2t %.10M %.6D %R" | awk '{print $5 " " $1 " " $3 }' >> $N_P
 }
 
+function squeue_2 {
+ qstat -xml | tr '\n' ' ' | sed 's#<job_list[^>]*>#\n#g'   | sed 's#<[^>]*>##g' | grep " " | column -t awk '{print $5 " " $1 " " $3 }' >> $N_P
+}
+
+
+
 case $HOST in
 	SKYLLA )
 	echo "skylla not enabled"
@@ -62,6 +68,8 @@ case $HOST in
 	FUCHS )
 	shift_files; squeue_1
 	;;
+	SKYLLA)
+	shift_files; squeue_2
 	*)
 	echo unknown host
 	exit
