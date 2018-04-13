@@ -57,7 +57,7 @@ function squeue_2 {
 
 case $HOST in
 	SKYLLA )
-	echo "skylla not enabled"
+	shift_files; squeue_2
 	;;
 	HALO )
 	shift_files; squeue_1
@@ -67,9 +67,6 @@ case $HOST in
 	;;
 	FUCHS )
 	shift_files; squeue_1
-	;;
-	SKYLLA)
-	shift_files; squeue_2
 	;;
 	*)
 	echo unknown host
