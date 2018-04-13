@@ -50,7 +50,7 @@ squeue -u $USER -o "%.18i %.9P %.20j %.8u %.2t %.10M %.6D %R" | awk '{print $5 "
 }
 
 function squeue_2 {
- qstat -xml | tr '\n' ' ' | sed 's#<job_list[^>]*>#\n#g'   | sed 's#<[^>]*>##g' | grep " " | column -t awk '{print $5 " " $1 " " $3 }' >> $N_P
+ qstat -xml | tr '\n' ' ' | sed 's#<job_list[^>]*>#\n#g'   | sed 's#<[^>]*>##g' | grep " " | column -t |  awk '{print $5 " " $1 " " $3 }' >> $N_P
 }
 
 
