@@ -1,5 +1,7 @@
 #!/bin/bash
 
+multi=1
+charge=0
 programm=gaussian
 anzahl_prozessoren_geaendert=false
 prozessoren=12
@@ -9,9 +11,15 @@ ausfuehren=false
 route="# pbe1pbe/def2SV opt freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3"
 transition_state="false"
 
-while getopts "f:stH:n:m:hS" OPTION
+while getopts "f:stH:n:M:hSc:m:" OPTION
 do
 	case $OPTION in 
+	m)
+		multi=$OPTARG
+		;;
+	c) 
+		charge=$OPTARG
+		;;
 	t)
 		transition_state="true"
 		route="# pbe1pbe/def2SV opt=(ts,noeigen,calcfc) freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3"
@@ -23,7 +31,7 @@ do
 		prozessoren=$OPTARG
 		anzahl_prozessoren_geaendert=true
 		;;
-	m)
+	M)
 		hauptspeicher=$OPTARG
 		;;
 	H)
@@ -92,6 +100,11 @@ fi
 if [ $dateiendung = ".out" ]; then
 	echo -e "Input-File $file is an .out-File. Convert to .xyz."
 
+	charge=$(grep Multiplicity $file | head -1 | awk '{print $3}')
+	multi=$(grep Multiplicity $file | head -1 | awk '{print $6}') 
+	
+	echo "Charge and Multiplicity were adopted from $file and set to $charge and $multi."
+	
 	out2xyz $file
 	file=${file/.out}.xyz
 fi
@@ -114,7 +127,7 @@ fi
 ####################################################################
 			if [ $programm = gaussian ]; then
 	
-sed -i '1i0 1' $file
+sed -i "1i$charge $multi" $file
 sed -i '1ipufferzeile' $file
 sed -i "1i${file/.xyz}" $file
 sed -i '1ipufferzeile' $file
@@ -174,7 +187,7 @@ fi
 ######################################################################
 			if [ $programm = orca ]; then
 echo "*" >> $file
-sed -i '1i* xyz 0 1' $file
+sed -i "1i* xyz $charge $multi" $file
 sed -i '1ipufferzeile' $file
 sed -i '1iend' $file
 sed -i "1i%pal nprocs=$prozessoren" $file
