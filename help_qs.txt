@@ -2,6 +2,7 @@ This is the help file for qs
 
 qs gives you an quick overview of your running / and finished job
 
-
-
+Set flags for alternative parameters:
+	-l List 
+		Print list of all jobs (state ID Name)
 
