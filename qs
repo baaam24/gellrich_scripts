@@ -10,6 +10,7 @@ N_P=$HOME/.tmp_qs/new.txt
 O_P=$HOME/.tmp_qs/old.txt
 USER=`echo $USER`
 SCRIPTDIR=`dirname $(readlink -f ${0})`
+LIST=0
 
 
 function line_0 {
@@ -20,17 +21,25 @@ function line_1 {
 echo "-------+------+------+------+------------------"
      #  NEW  | 6    | 0    | 6    | 2018-02-14_13:30
 }
+function line_2 {
+echo "==============================================="
+     #  NEW  | 6    | 0    | 6    | 2018-02-14_13:30
+}
 function head_1 {
 echo "       | R    | PD   | ALL  |                  "
      #  NEW  | 6    | 0    | 6    | 2018-02-14_13:30
 }
 
 
-while getopts "h" OPTION; do
+
+while getopts "hl" OPTION; do
   case $OPTION in
     h) 
 	vim $SCRIPTDIR/help_qs.txt  
 	exit
+	;;
+	l)
+	LIST=1
 	;;
 	\?)
     echo "Invalid option: -$OPTARG" >&2
@@ -107,7 +116,7 @@ OLD_NOW=`head -1 $O_P`
 printf '  %-4s | %-4s | %-4s | %-4s | %-15s \n' NEW $NEW_RUN_JOBS $NEW_PND_JOBS $NEW_ALL_JOBS $NOW
 printf '  %-4s | %-4s | %-4s | %-4s | %-15s \n' OLD $OLD_RUN_JOBS $OLD_PND_JOBS $OLD_ALL_JOBS $OLD_NOW
 
-line_1
+line_2
 
 sed  "1d" $O_P > $HOME/.tmp_qs/jobs_old.txt
 sed  "1d" $N_P > $HOME/.tmp_qs/jobs_new.txt
@@ -124,13 +133,18 @@ diff $HOME/.tmp_qs/jobs_old.txt $HOME/.tmp_qs/jobs_new.txt  > $HOME/.tmp_qs/diff
 echo "new entries in queue:"
 grep ">" $HOME/.tmp_qs/diff.txt
 
-line_1
+line_0
 
 echo "entrys no longer in queue: "
 grep "<" $HOME/.tmp_qs/diff.txt
 
 
-
+if [ "$LIST" = 1 ]
+	then
+	line_0
+	echo "current jobs in queue: "
+	cat $N_P | sed -e 1d
+	fi
 
 
 
