@@ -135,7 +135,7 @@ grep ">" $HOME/.tmp_qs/diff.txt
 
 line_0
 
-echo "entrys no longer in queue: "
+echo "entries no longer in queue: "
 grep "<" $HOME/.tmp_qs/diff.txt
 
 
