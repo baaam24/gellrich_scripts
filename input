@@ -22,7 +22,7 @@ do
 		;;
 	t)
 		transition_state="true"
-		route="# pbe1pbe/def2SV opt=(ts,noeigen,calcfc) freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3"
+		route="# pbe1pbe/def2SVP opt=(ts,noeigen,calcfc) freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3bj"
 		;;
 	f)
 		file=$OPTARG
