@@ -392,6 +392,39 @@ NOTES+="SI_written_(CSV)"
 }
 
 
+function gen_SI_v3 {
+
+find_charge
+find_coords
+
+COORDS_CSV=`echo "$COORDS_RAW" | sed -e 1d | sed -e 's/,0,/,/g' | sed -e 's/ //g '  | sed -e 's/,/;/g' `
+
+echo -e  "Number in this Plublication: ; " >> SI.CSV
+echo -e  "" >> SI.CSV
+echo -e  " ; Hartree"
+echo -e  "E $METH / $BASIS ; $ENERG_EL" >> SI.CSV
+echo -e  "E @CC-SP ; "
+echo -e  "E @SMD ; "
+echo -e  "ZPVE: ; $ZPVE ; " >> SI.CSV
+echo -e  "@H(korr.): ; $ENTHALPY " >> SI.CSV
+echo -e  "@G(korr.): ; $GIBBS " >> SI.CSV
+echo -e  "number of imaginary frequencies: ; $IMAG"
+echo -e  "" >> SI.CSV
+echo -e  "Charge:  ; $CHARGE ; Multiplicity: ; $MULITPL " >> SI.CSV
+echo -e  "Koordinaten (X, Y, Z) / Angström " >> SI.CSV
+echo -e  " $COORDS_CSV " >> SI.CSV
+echo -e  "" >> SI.CSV
+echo -e  "" >> SI.CSV
+echo -e  "" >> SI.CSV
+echo -e  "" >> SI.CSV
+
+
+NOTES+="SI_written_(CSV)"
+
+}
+
+
+
 ######################################################
 # initialisation of the *.csv files
 
