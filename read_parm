@@ -12,7 +12,10 @@ Param_2=`echo "$Param" | sed 's/[-_]/ /g' `
 pi=`echo "scale=15; 4*a(1)" | bc -l `
 
 function arccos () {
-    scale=15
+    
+	echo "internal bc bodge for atan"
+	
+	scale=15
     if (( $(echo "$1 == 0" | bc -l) )); then
         echo "a(1)*2" | bc -l
     elif (( $(echo "(-1 <= $1) && ($1 < 0)" | bc -l) )); then
@@ -108,12 +111,17 @@ C_Z=`echo "$COORS_C" | awk '{print $4}'`
 BA_X=`echo "$A_X - $B_X "| bc`
 BA_Y=`echo "$A_Y - $B_Y "| bc`
 BA_Z=`echo "$A_Z - $B_Z "| bc`
+echo "BA:"
+echo "$BA_X $BA_Y $BA_Z"
 
 #calculate vector BC
 
 BC_X=`echo "$C_X - $B_X "| bc`
 BC_Y=`echo "$C_Y - $B_Y "| bc`
 BC_Z=`echo "$C_Z - $B_Z "| bc`
+
+echo "BC:"
+echo "$BC_X $BC_Y $BC_Z"
 
 #skalarprodukt der vektoren
 
@@ -136,8 +144,8 @@ len_BC=`echo "sqrt( $BC_X^2 + $BC_Y^2 + $BC_Z^2 )" | bc`
 bruch=`echo "  $BA_BC / ( $len_BA * $len_BC ) " | bc -l `
 
 # umrechnung des Winkels
-angl_rad=`arccos $bruch`
-angl_deg=`echo " (360 / (2 * $pi)) * $angl_rad " | bc -l `
+angl_deg=`python acos.py $bruch`
+#angl_deg=`echo " (360 / (2 * $pi)) * $angl_rad " | bc -l `
 
 echo " winkel grad $angl_deg" 
 
@@ -262,8 +270,8 @@ echo "  $N1_N2 / ( $len_N1 * $len_N2 ) "
 bruch=`echo "  $N1_N2 / ( $len_N1 * $len_N2 ) " | bc -l `
 
 # umrechnung des Winkels
-dihed_rad=`arccos $bruch`
-dihed_deg=`echo " (360 / (2 * $pi)) * $dihed_rad " | bc -l `
+dihed_deg=`python acos.py $bruch`
+#	dihed_deg=`echo " (360 / (2 * $pi)) * $dihed_rad " | bc -l `
 
 
 echo " bruch $bruch"
