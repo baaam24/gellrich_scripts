@@ -397,28 +397,30 @@ function gen_SI_v3 {
 find_charge
 find_coords
 
-COORDS_CSV=`echo "$COORDS_RAW" | sed -e 1d | sed -e 's/,0,/,/g' | sed -e 's/ //g '  | sed -e 's/,/;/g' `
-
-echo -e  "Number in this Plublication: ; " >> SI.CSV
-echo -e  "" >> SI.CSV
-echo -e  " ; Hartree" >> SI.CSV
-echo -e  "E $METH / $BASIS ; $ENERG_EL" >> SI.CSV
-echo -e  "E @CC-SP ; " >> SI.CSV
-echo -e  "E @SMD ; " >> SI.CSV
-echo -e  "ZPVE: ; $ZPVE ; " >> SI.CSV
-echo -e  "@H(korr.): ; $ENTHALPY " >> SI.CSV
-echo -e  "@G(korr.): ; $GIBBS " >> SI.CSV
-echo -e  "number of imaginary frequencies: ; $IMAG" >> SI.CSV
-echo -e  "" >> SI.CSV
-echo -e  "Charge:  ; $CHARGE ; Multiplicity: ; $MULITPL " >> SI.CSV
-echo -e  " $COORDS_CSV " >> SI.CSV
-echo -e  "" >> SI.CSV
-echo -e  "" >> SI.CSV
-echo -e  "" >> SI.CSV
-echo -e  "" >> SI.CSV
+COORDS_TAB1=`echo "$COORDS_RAW" | sed -e 1d | sed -e 's/,0,/,/g' | sed -e 's/ //g '  | sed -e 's/,/ /g' `
+COORDS_TAB=`printf '%-3s\t%-14s\t%-14s\t%-14s\n' $COORDS_TAB1`
 
 
-NOTES+="SI_written_(CSV)"
+echo -e  "Number in this Plublication: $FILENAMFORMATTED  " >> SI.TXT
+echo -e  "" >> SI.TXT
+echo -e  "Energy \t\t\t Hartree" >> SI.TXT
+echo -e  "E $METH/$BASIS \t$ENERG_EL" >> SI.TXT
+echo -e  "E @CC-SP \t\t " >> SI.TXT
+echo -e  "E @SMD \t\t " >> SI.TXT
+echo -e  "ZPVE: \t\t\t$ZPVE " >> SI.TXT
+echo -e  "@H(korr.): \t\t$ENTHALPY " >> SI.TXT
+echo -e  "@G(korr.): \t\t$GIBBS " >> SI.TXT
+echo -e  "number of imaginary frequencies: \t$IMAG" >> SI.TXT
+echo -e  "" >> SI.TXT
+echo -e  "$CHARGE $MULITPL " >> SI.TXT
+echo -e  "$COORDS_TAB " >> SI.TXT
+echo -e  "" >> SI.TXT
+echo -e  "" >> SI.TXT
+echo -e  "" >> SI.TXT
+echo -e  "" >> SI.TXT
+
+
+NOTES+="SI_written_(TXT)"
 
 }
 
@@ -451,8 +453,8 @@ case $SI_vers in # checking for valid SI version
 	2) #SI in CSV format
 	echo " SI generated with summary " > SI.CSV
 	;;
-	3) #SI in CSV format in english
-	echo " SI generated with summary " > SI.CSV
+	3) #SI in TXT format in english
+	echo " SI generated with summary " > SI.TXT
 	;;
 	*)
 	prnt_warning 
@@ -513,7 +515,7 @@ case $SI_vers in # checking for valid SI version
 	2) #SI in CSV format
 	gen_SI_v2
 	;;
-	3) #SI in CSV format
+	3) #SI in TXT format
 	gen_SI_v3
 	;;
 	*)
@@ -566,3 +568,7 @@ then
 	sed "s/\./$DECISEP/g" $CSVFILEFILEPATH_BKUP > $CSVFILEFILEPATH
 	#awk '$1=$1' FS=";" OFS="$CSVDELIM" $CSVFILEFILEPATH_BKUP > $CSVFILEFILEPATH
 fi
+
+
+
+# printf '%3s\t%-14s\t%-14s\t%-14s\n' $COORDS
