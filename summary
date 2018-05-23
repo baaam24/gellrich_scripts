@@ -401,17 +401,16 @@ COORDS_CSV=`echo "$COORDS_RAW" | sed -e 1d | sed -e 's/,0,/,/g' | sed -e 's/ //g
 
 echo -e  "Number in this Plublication: ; " >> SI.CSV
 echo -e  "" >> SI.CSV
-echo -e  " ; Hartree"
+echo -e  " ; Hartree" >> SI.CSV
 echo -e  "E $METH / $BASIS ; $ENERG_EL" >> SI.CSV
-echo -e  "E @CC-SP ; "
-echo -e  "E @SMD ; "
+echo -e  "E @CC-SP ; " >> SI.CSV
+echo -e  "E @SMD ; " >> SI.CSV
 echo -e  "ZPVE: ; $ZPVE ; " >> SI.CSV
 echo -e  "@H(korr.): ; $ENTHALPY " >> SI.CSV
 echo -e  "@G(korr.): ; $GIBBS " >> SI.CSV
-echo -e  "number of imaginary frequencies: ; $IMAG"
+echo -e  "number of imaginary frequencies: ; $IMAG" >> SI.CSV
 echo -e  "" >> SI.CSV
 echo -e  "Charge:  ; $CHARGE ; Multiplicity: ; $MULITPL " >> SI.CSV
-echo -e  "Koordinaten (X, Y, Z) / Angström " >> SI.CSV
 echo -e  " $COORDS_CSV " >> SI.CSV
 echo -e  "" >> SI.CSV
 echo -e  "" >> SI.CSV
@@ -450,6 +449,9 @@ case $SI_vers in # checking for valid SI version
 	echo " " > SI.txt
 	;;
 	2) #SI in CSV format
+	echo " SI generated with summary " > SI.CSV
+	;;
+	3) #SI in CSV format in english
 	echo " SI generated with summary " > SI.CSV
 	;;
 	*)
@@ -507,6 +509,12 @@ case $SI_vers in # checking for valid SI version
 	;;
 	2) #SI in CSV format
 	gen_SI_v2
+	;;
+	2) #SI in CSV format
+	gen_SI_v2
+	;;
+	3) #SI in CSV format
+	gen_SI_v3
 	;;
 	*)
 	prnt_error
