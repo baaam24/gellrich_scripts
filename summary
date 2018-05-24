@@ -391,7 +391,6 @@ NOTES+="SI_written_(CSV)"
 
 }
 
-
 function gen_SI_v3 {
 
 find_charge
@@ -425,7 +424,6 @@ NOTES+="SI_written_(TXT)"
 }
 
 
-
 ######################################################
 # initialisation of the *.csv files
 
@@ -434,7 +432,7 @@ echo "user;$USERFILEPATH" >> $CSVFILEFILEPATH
 echo "directory;$DIR" >> $CSVFILEFILEPATH
 echo "host;$HOST" >> $CSVFILEFILEPATH
 echo "host IP;$HOSTIP" >> $CSVFILEFILEPATH
-
+echo "Hartree in kcal/mol;627.5096080305927; REF: https://www.weizmann.ac.il/oc/martin/tools/hartree.html"
 echo " " >> $CSVFILEFILEPATH
 
 TABLEHEAD="Filepath;filename;method; basisset; E(el); ZP corr.; E corr.; H corr.; G corr.; imaginary frequencies; Normal terminations; programm; Revison; Runtime; Notes"
