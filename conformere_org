@@ -3,7 +3,7 @@
 #####################################################################
 #Flag fuer das Ausgeben des Hilfe Textfiles
 #####################################################################
-
+#test
 while getopts "ah" OPTION
 do
     case $OPTION in
