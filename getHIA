@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+# Calculate HIA of a molecule of interest in the current directory
+# Syntax: HIA
+# Output: HIA in kcal/mol (dissociation enthalpy at 298.15 K)
+#
+
+##### variables
+unset SCFneut ZPVEneut Hcorrneut Eneut Hneut SCFcat ZPVEcat Hcorrcat Ecat Hcat HIAE HIAH HIAEkcal HIAHkcal
+
+LEVEL=g3                # reference level of theory (Default: G3)
+REF=isobutane           # reference compound (Default: isobutane C4H10)
+NEUTRAL=opt.out         # out-file of neutral molecule
+CATION=opt-cat.out      # out-file of cationic molecule
+
+##### ARGUMENTS
+
+while getopts "l:r:n:c:" OPTION; do
+        case $OPTION in
+                l)
+                        LEVEL=$OPTARG
+                ;;
+                r)
+                        REF=$OPTARG
+                ;;
+                n)
+                        NEUTRAL=$OPTARG
+                ;;
+                c)
+                        CATION=$OPTARG
+                ;;
+        esac
+done
+
+##### REFERENCE COMPOUND
+
+checkREF=$(echo $REF | tr [:upper:] [:lower:])
+
+if [ "$checkREF" = "isobutane" ] || [ "$checkREF" = "isobutan" ] || [ "$checkREF" = "c4h10" ]
+then
+	echo "Reference compound: isobutane C4H10 (PBE0-D3(BJ)/def2-SVP)"
+	Href=0.875919784
+	Eref=0.890535784
+else
+	echo "Invalid reference compound."
+fi
+
+##### LEVEL OF THEORY OF REFERENCE DISSOCIATION REACTION
+
+checkLEVEL=$(echo $LEVEL | tr [:upper:] [:lower:])
+
+case $checkLEVEL in
+        g3)
+                echo "G3 reference"
+				Hlevel=0.389185
+				Elevel=0.386203
+        ;;
+        w1)
+                echo "W1 is currently not implemented."
+        ;;
+        \?)
+                echo "INVALID LEVEL OF THEORY"
+        ;;
+esac
+
+##### NEUTRAL
+
+SCFneut=$(summary -v -f $NEUTRAL | tail -1 | awk '{print $1}')
+ZPVEneut=$(summary -v -f $NEUTRAL | tail -1 | awk '{print $2}')
+Hcorrneut=$(summary -v -f $NEUTRAL | tail -1 | awk '{print $4}')
+
+Eneut=$(echo $SCFneut+$ZPVEneut | sed 's/--/+/g' | bc -l)
+Hneut=$(echo $Eneut+$Hcorrneut | sed 's/--/+/g' | bc -l)
+
+##### CATION
+
+SCFcat=$(summary -v -f $CATION | tail -1 | awk '{print $1}')
+ZPVEcat=$(summary -v -f $CATION | tail -1 | awk '{print $2}')
+Hcorrcat=$(summary -v -f $CATION | tail -1 | awk '{print $4}')
+
+Ecat=$(echo $SCFcat+$ZPVEcat | sed 's/--/+/g' | bc -l)
+Hcat=$(echo $Ecat+$Hcorrcat | sed 's/--/+/g' | bc -l)
+
+###### HIA calculation
+
+HIAE=$(echo $Elevel-$Eref+$Ecat-$Eneut | sed 's/--/+/g' | bc -l)
+HIAH=$(echo $Hlevel-$Href+$Hcat-$Hneut | sed 's/--/+/g' | bc -l)
+
+HIAEkcal=$(echo $HIAE*627.5095 | bc -l)
+HIAHkcal=$(echo $HIAH*627.5095 | bc -l)
+
+### OUTPUT
+
+echo $HIAHkcal
+
+
+
+

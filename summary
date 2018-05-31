@@ -30,6 +30,7 @@ MAXFILES=25 # maximal files summary will read without extra user input
 DEPTH=all #depth of search -1=all 0=current n=n subfolders
 VERBOSITY=0 # verbosity of the output on terminal
 SI_vers=0 # which kind of SI file is written ( Default: 0 = none )
+VARFILE=all # given output-file for analysis ( Default: all ) #TIZIAN  
 
 
 
@@ -48,7 +49,7 @@ echo -e -n "\033[0;32m OK: \033[0m "
 
 ## here schould be some sort of check for arguments
 
-while getopts ":hd:s:cn:vi:" OPTION; do
+while getopts ":hd:s:cn:vi:f:" OPTION; do	#TIZIAN
   case $OPTION in
     h) 
 	vim $SCRIPTDIR/help_summary.txt  
@@ -72,6 +73,9 @@ while getopts ":hd:s:cn:vi:" OPTION; do
 	i)
 	SI_vers=$OPTARG
 	;;
+	f)					#TIZIAN
+	VARFILE=$OPTARG
+	;;
     \?)
 	prnt_error
     echo "Invalid option: -$OPTARG" >&2
@@ -86,25 +90,34 @@ done
 # show welcome message
 echo -n "summary version $VERSION    "
 
+#Defining the depth of search (-c -n) or output file (-f)
 
-#Defining the depth of search
-case $DEPTH in
-	all)
-	LIST=`find ! -name 'slurm*.out' -name "*.out"`
-	echo "... searching in all subfolders"
-	;;
-	0)
-	LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "*.out"`
-	echo "... searching in only the currend folder"
-	;;
-	*)
-	echo "... searching this and $DEPTH subfolders"
-	DEPTH=`echo "$DEPTH + 1"  | bc`
-	LIST=`find -maxdepth $DEPTH ! -name 'slurm*.out' -name "*.out"`
-	;;
-esac
+ case $VARFILE in								#TIZIAN
+         all)
+         case $DEPTH in
+                 all)
+                 LIST=`find ! -name 'slurm*.out' -name "*.out"`
+                 echo "... searching in all subfolders"
+                 ;;
+                 0)
+                 LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "*.out"`
+                 echo "... searching in only the currend folder"
+                 ;;
+                 *)
+                 echo "... searching this and $DEPTH subfolders"
+                 DEPTH=`echo "$DEPTH + 1"  | bc`
+                 LIST=`find -maxdepth $DEPTH ! -name 'slurm*.out' -name "*.out"`
+                 ;;
+         esac
+         LISTARR=($LIST)
+         ;;
+         *)									#TIZIAN 
+         echo "... search for file: "$VARFILE""
+         LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "$VARFILE"`
+         LISTARR=($LIST)
+         ;;
+ esac
 
-LISTARR=($LIST)
 
 
 # asks for user reply if too much files are found
@@ -472,7 +485,7 @@ case $VERBOSITY in
 	#     8_PBE0_D3_def2SVp_stacke  | -          | -        | -         | 0 | 0 | Gaussian | Job_running_or_crashed
 	;;
 	1)
-	echo "$FULLPATH $FILENAME $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
+	echo "$ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS" #TIZIAN
 	;;
 esac
 
@@ -536,7 +549,7 @@ case $VERBOSITY in
 	#echo " $FILENAMFORMATTED $ENERG_EL_FORM $ZPVE $GIBBS $NTERM $IMAG $PROGNAME $NOTES "
 	;;
 	1)
-	echo "$FILEPATH $METH $BASIS $ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS $IMAG $NTERM $PROG $REV $RUNTIME"
+	echo "$ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS"	#TIZIAN
 	;;
 esac
 

@@ -1,0 +1,304 @@
+#!/bin/bash
+####################### syntax: getNBO 
+####################### works for NBO Version 3.1 if there is 1 out-file in the current directory
+
+### TO DO LIST
+# print warning if tempwib* exists in current directory
+# wiberg and npa output should include atom labels (C,H,...)
+# unit (eV, kcal/mol, ...)
+# output format including level of theory
+# output chose NBO computation if multiple are pesent
+# supress homolumo or energy output
+# donor-acceptor ?
+# colors?
+# NBO6 ?
+# DFT instead of HF/MP2 ?
+# multiple files? recognition of nbo files?
+# multiple directories?
+# 2 NBOs in 1 file of different structures?
+# 
+#
+
+################# variables
+
+NA=""
+
+unset NUMNBO NTERM LIST NBO[*] level[*] start[*] end[*] NAT[*]
+
+READAT=-1
+WIBBONDS=-1
+
+temp1=tempraw1	#nbo output 1
+temp2=tempraw2	#nbo output 2
+
+################################### ARGUMENTS
+
+while getopts "c:w:" OPTION; do
+	case $OPTION in
+	c)		
+		READAT=$OPTARG	# '-c a,b,c' requests Natural Charges: a and b and c
+		READAT=$(echo $READAT | sed -e 's/^,*//' | rev | sed -e 's/^,*//' | rev)
+	;;
+	w)
+		WIBBONDS=$OPTARG # '-w a-b,c-d,e-f' requests Wiberg indices: a-b and c-d and e-f
+		WIBBONDS=$(echo $WIBBONDS | sed -e 's/^,*//' | rev | sed -e 's/^,*//' | rev)
+	;;
+
+	esac
+done
+
+#conversion of units
+#adopted from Gaussian16
+#based on 10.1103/RevModPhys.84.1527 10.1063/1.4724320 10.1351/pac197951010001 
+#syntax: [a.u.] * UNIT = VALUE in UNIT
+eV=27.2113850560
+J=$(echo "4.3597443419*(10^-18)" | bc -l)
+kcal=627.5095
+
+#### search for output-file within the current folder
+
+echo "... search in current folder"
+LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "*.out"`	
+LISTARR=($LIST)
+
+NUMNBO=$(grep -c "Gaussian NBO Version" ${LISTARR[@]})
+NTERM=`grep -c "Normal termination of Gaussian" ${LISTARR[@]}`
+
+case $NUMNBO in
+	0)
+	echo "Did not find any NBO computation in ${LISTARR[@]}"
+	;;
+	2)
+	NBO[1]=$(grep "Gaussian NBO Version" ${LISTARR[@]} | tr -d '*' | head -1)
+	level[1]=$(grep "Analyzing the" ${LISTARR[@]} | cut -d ' ' -f4 | head -1 | tr -s 'SCF' 'HF')
+	start[1]=$(grep -n "SCF Done:" ${LISTARR[@]} | head -1 | cut -d':' -f1)
+	end[1]=$(grep -n "Normal termination of Gaussian" ${LISTARR[@]} | head -1 | cut -d ':' -f1)
+#	NAT[1]=$(grep NATOMS ${LISTARR[@]} | head -1 | awk '{print $2}')
+
+	echo "There is a ${NBO[1]} computation in ${LISTARR[@]} at ${level[1]} level of theory"
+
+	if [ "$NTERM" = "1" ]
+	then
+		sed -n "${start[1]}","${end[1]}"p ${LISTARR[@]} > $temp1
+	else
+		echo "NORMAL TERMINATION MISSING"
+		sed -n "${start[1]}","$"p ${LISTARR[@]} > $temp1
+	fi
+	;;
+	4)
+	NBO[1]=$(grep "Gaussian NBO Version" ${LISTARR[@]} | tr -d '*' | head -1)
+	level[1]=$(grep "Analyzing the" ${LISTARR[@]} | cut -d ' ' -f4 | head -1 | tr -s 'SCF' 'HF')
+	start[1]=$(grep -n "SCF Done:" ${LISTARR[@]} | head -1 | cut -d':' -f1)
+	end[1]=$(grep -n "Normal termination of Gaussian" ${LISTARR[@]} | head -1 | cut -d':' -f1)
+#	NAT[1]=$(grep NATOMS ${LISTARR[@]} | head -1 | awk '{print $2}')
+
+	NBO[2]=$(grep "Gaussian NBO Version" ${LISTARR[@]} | tr -d '*' | tail -1)
+	level[2]=$(grep "Analyzing the" ${LISTARR[@]} | cut -d ' ' -f4 | tail -1 | tr -s 'SCF' 'HF')
+	start[2]=$(grep -n "SCF Done:" ${LISTARR[@]} | tail -1 | cut -d':' -f1)
+	end[2]=$(grep -n "Normal termination of Gaussian" ${LISTARR[@]} | tail -1 | cut -d':' -f1)
+#	NAT[2]=$(grep NATOMS ${LISTARR[@]} | tail -1 | awk '{print $2}')
+
+	echo "There are 2 ${NBO[1]} computations in ${LISTARR[@]} at ${level[1]} and ${level[2]} level of theory"
+
+	case $NTERM in
+		0)
+		echo "There are 2 NBO computations without any normal termination. Please check your file."
+		;;
+		1)
+		if [ "${end[1]}" -lt "${NBO[2]}" ]
+		then
+			echo "${NBO[2]} AT ${level[2]} LEVEL DID NOT TERMINATE NORMALLY"
+			sed -n "${start[1]}","${end[1]}"p ${LISTARR[@]} > $temp1
+			sed -n "${start[2]}","$"p ${LISTARR[@]} > $temp2	
+		else
+			echo "${NBO[1]} AT ${level[1]} LEVEL DID NOT TERMINATE NORMALLY"
+			sed -n "${start[1]}","${start[2]}"p ${LISTARR[@]} > $temp1
+			sed -n "${start[2]}","${end[2]}"p ${LISTARR[@]} > $temp2	
+		fi
+		;;
+		2)
+		sed -n "${start[1]}","${end[1]}"p ${LISTARR[@]} > $temp1
+		sed -n "${start[2]}","${end[2]}"p ${LISTARR[@]} > $temp2	
+		;;	
+	esac
+	;;
+esac
+
+
+############## FUNCTIONS
+### read stuff from FILE
+
+function homolumo {
+
+unset HOMO LUMO GAP
+
+HOMO=$(grep "occ. eigenvalues" $FILE | tail -1 | awk '{print $NF}')
+LUMO=$(grep -A1 "occ. eigenvalues" $FILE | tail -1 | grep "virt. eigenvalues" | awk '{print $5}')
+GAP=$(echo $LUMO-$HOMO | sed 's/--/+/g' | bc -l)
+GAP=$(echo 0$GAP)
+
+echo "HOMO / LUMO / GAP [a.u.]"
+echo "$HOMO $LUMO $GAP"
+
+}
+
+########### only HF and MP2 energies
+function energies {
+
+unset HF MP2 exp mult
+
+HF=$(grep "E(RHF)" $FILE | tr -s ' ' ' ' | cut -d' ' -f6)
+MP2=$(grep "EUMP2" $FILE | tr -s ' ' ' ' | cut -d' ' -f7 | cut -d'D' -f1)
+exp=$(grep "EUMP2" $FILE | tr -s ' ' ' ' | cut -d' ' -f7 | cut -d'D' -f2)
+mult=$(echo "10^(0$exp)" | bc -l)
+MP2=$(echo $MP2*$mult | bc -l | rev | sed -e 's/^0*//' | rev)
+
+if [ -z "$MP2" ]; then
+	echo HF [a.u.]
+	echo $HF 
+else 
+	echo HF / MP2 [a.u.]
+	echo $HF $MP2 
+fi
+
+}
+
+function npa {
+
+unset findpop inipop check finalpop NPA OUTPOP[*]
+
+if [ $READAT != -1 ]; then
+
+numc=$(echo $READAT | awk -F ',' '{print NF}')
+
+for (( i=1 ; i <= $numc ; i++ ))
+do
+	NUMAT[$i]=$(echo $READAT | awk -F ',' -v 'var='$i'' '{print $var}')
+done
+
+findpop=$(grep -n "Natural Population Analysis" $FILE | cut -d':' -f1 | head -1)
+inipop=$(echo $findpop+6 | bc -l)
+
+	for (( i=$inipop ; i>0 ; i++ ))
+	do
+      		check=$(sed -n "$i"p $FILE | awk '{print $2}')
+	        re='^[0-9]+$'
+
+        if ! [[ $check =~ $re ]] ; then
+                finalpop=$(echo $i-1 | bc -l)
+                i=-1
+        fi
+	done
+
+NPA=$(sed -n "$inipop","$finalpop"p $FILE | awk '{print $3}')
+
+for (( i=1 ; i <= $numc ; i++))
+do
+	OUTPOP[$i]=$(echo "$NPA" | sed -n "${NUMAT[$i]}"p)
+done
+
+echo "Requested Natural Charges:"
+echo "Atoms ${NUMAT[@]}"
+echo "${OUTPOP[@]}"
+
+fi
+
+}
+
+function wiberg {
+
+unset wibstart wibend WIBMAT NAT numblocks x y wib[*] checklines checkcolumns OUTWIBERG[*]
+rm -f tempwib* 		
+
+if grep -q BNDIDX $FILE && [ $WIBBONDS != -1 ] ; then 
+
+numw=$(echo $WIBBONDS | awk -F ',' '{print NF}')
+
+for (( i=1 ; i <= $numw ; i++ ))
+do
+	WLIN[$i]=$(echo $WIBBONDS | awk -F ',' -v 'var='$i'' '{print $var}' | awk -F '-' '{print $1}')
+	WCOL[$i]=$(echo $WIBBONDS | awk -F ',' -v 'var='$i'' '{print $var}' | awk -F '-' '{print $2}')
+done
+
+wibstart=$(grep -n "Wiberg bond index matrix" $FILE | cut -d':' -f1)
+wibend=$(grep -n "Wiberg bond index, Totals" $FILE | cut -d':' -f1)
+
+wibstart=$(echo $wibstart+4 | bc -l)
+wibend=$(echo $wibend-3 | bc -l)
+
+WIBMAT=$(sed -n "$wibstart","$wibend"p $FILE)
+NAT=$(echo "$WIBMAT" | tail -1 | cut -d '.' -f1)
+
+if echo "$WIBMAT" | awk '{print $2}' | grep -q '-'; then
+	numblocks=$(echo "$WIBMAT" | grep -c Atom)
+	numblocks=$(echo $numblocks+1 | bc -l)
+	
+	for (( i=1 ; i <= $numblocks ; i++ ))
+	do
+		x=$(echo "1+(($i-1)*($NAT+3))" | bc -l)
+		y=$(echo $x+$NAT-1 | bc -l)
+		wib[$i]=$(echo "$WIBMAT" | sed -n "$x","$y"p | awk '{$1=$2=""; print $0}' | tr -s ' ' ',')
+		echo "${wib[$i]}" > tempwib"$i"
+	done
+	WIBMAT=$(paste tempwib* | tr -s [:blank:] ',')
+	rm -f tempwib*
+	
+else
+	WIBMAT=$(echo "$WIBMAT" | awk '{$1=$2=""; print $0}' | tr -s ' ' ',')
+fi
+
+checklines=$(echo "$WIBMAT" | wc -l)
+checkcolumns=$(echo "$WIBMAT" | head -1 | awk -F ',' '{print NF-1}')
+
+if [ "$NAT" -eq "$checklines" ] && [ "$NAT" -eq "$checkcolumns" ] ; then
+	echo "Wiberg bond index matrix is present"
+	for (( i=1 ; i <= $numw ; i++))
+	do
+		col=$(echo ${WCOL[$i]}+1 | bc -l)
+	        OUTWIBERG[$i]=$(echo "$WIBMAT" | sed -n "${WLIN[$i]}"p | awk -F ',' -v 'var='$col'' '{print $var}')
+	done
+fi
+
+echo "Requested Wiberg Indices:"
+echo "Bonds $WIBBONDS" | tr ',' ' '
+echo "${OUTWIBERG[@]}"
+
+fi
+
+}
+
+##################### OUTPUT IS CREATED HERE
+
+for FILE in "$temp1" "$temp2"; do
+
+outcount=""
+case $FILE in
+	"$temp1")
+		outcount=1
+	;; 
+	"$temp2")
+		outcount=2
+	;;
+esac
+
+
+if [[ -f "$FILE" && -s "$FILE" ]]; then 
+ 	echo "Results for ${NBO[$outcount]} at ${level[$outcount]} level"
+	homolumo
+	energies
+	npa
+	wiberg
+	
+fi 
+
+done
+
+##### remove temporary files
+
+rm -f $temp1 $temp2
+
+
+
+
+
+
