@@ -445,7 +445,7 @@ echo "user;$USERFILEPATH" >> $CSVFILEFILEPATH
 echo "directory;$DIR" >> $CSVFILEFILEPATH
 echo "host;$HOST" >> $CSVFILEFILEPATH
 echo "host IP;$HOSTIP" >> $CSVFILEFILEPATH
-echo "Hartree in kcal/mol;627.5096080305927; REF: https://www.weizmann.ac.il/oc/martin/tools/hartree.html"
+echo "Hartree in kcal/mol;627.5096080305927; REF: https://www.weizmann.ac.il/oc/martin/tools/hartree.html" >> $CSVFILEFILEPATH
 echo " " >> $CSVFILEFILEPATH
 
 TABLEHEAD="Filepath;filename;method; basisset; E(el); ZP corr.; E corr.; H corr.; G corr.; imaginary frequencies; Normal terminations; programm; Revison; Runtime; Notes"
