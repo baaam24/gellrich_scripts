@@ -19,7 +19,7 @@ Set flags for alternative parameters:
 		Creates Gaussian16 input file for TS [opt=(ts,calcfc,noeigen)] (File will get an TS_ prefix)
 	
 	-n number of processors
-		Used processors (Default 12 for Gaussian16 and 8 for Orca)
+		Used processors (Default 12 for Gaussian16 and 6 for Orca)
 	
 	-m main memory
 		Used main memory in MB (Default 10000)

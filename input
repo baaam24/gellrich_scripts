@@ -45,7 +45,7 @@ do
 ###########################################################################################
 	S)
 		if [ $anzahl_prozessoren_geaendert = false ]; then
-			prozessoren=8
+			prozessoren=6
 		fi
 			
 		programm=orca
