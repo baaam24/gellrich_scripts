@@ -47,6 +47,8 @@ do
 		if [ $anzahl_prozessoren_geaendert = false ]; then
 			prozessoren=6
 		fi
+		
+		hauptspeicher=3000
 			
 		programm=orca
 		route="! DLPNO-CCSD(T) NoUseSym def2-TZVP def2-TZVP/C tightscf"

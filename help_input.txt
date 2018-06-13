@@ -13,7 +13,7 @@ Set flags for alternative parameters:
 		file for creating the input file (has to be an .xyz or .out file)
 	
 	-S single point
-		Submit calculation as DLPNO-CCSDT SP in ORCA (only on halo) (File will get an _SP suffix)
+		Submit calculation as DLPNO-CCSDT SP in ORCA (only on halo; default processors=6, main memory=3000) (File will get an _SP suffix)
 	
 	-t transition state
 		Creates Gaussian16 input file for TS [opt=(ts,calcfc,noeigen)] (File will get an TS_ prefix)
