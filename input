@@ -48,7 +48,7 @@ do
 			prozessoren=6
 		fi
 		
-		hauptspeicher=3000
+		hauptspeicher=5000
 			
 		programm=orca
 		route="! DLPNO-CCSD(T) NoUseSym def2-TZVP def2-TZVP/C tightscf"
