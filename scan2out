@@ -1,0 +1,65 @@
+#!/bin/bash
+#
+# Syntax: scan2out
+# Output: Converts an output-file of scan-computation in the current directory into a table giving the scanned variable and absolute and relative energies
+#
+
+LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "*.out"`
+
+SCANVAR=$(grep Scan $LIST | grep -m1 ! | awk '{print $2}')
+numSTEP=$(grep "Number of optimizations in scan=" $LIST | awk '{print $NF}')
+numOPT=$(grep -c "Optimization completed" $LIST | awk '{print $NF}')
+diffSTEPOPT=$(echo $numSTEP-$numOPT | bc -l)
+
+if ! [ $diffSTEPOPT = 0 ] ; then
+	echo "WARNING: $diffSTEPOPT optimization steps did not complete."
+fi
+
+PESstart=$(tac $LIST | grep -n -m 1 "Summary of Optimized Potential Surface Scan" | cut -f1 -d':')
+PESend=$(tac $LIST | grep -n -m 1 GradGradGradGrad | cut -f1 -d':')
+REFENERGY=$(grep -m1 "Summary of Optimized Potential Surface Scan" $LIST | awk '{print $8}')
+PESraw=$(tac $LIST | sed -n "$PESend","$PESstart"p | tac)
+
+i=0
+k=0
+re='^-?[0-9]+([.][0-9]+)?$'
+EMIN=$(echo "$PESraw" | grep Eigenvalues | awk '{for(i=3;i<=NF;++i)print $i}' | sort -n | head -1)
+EMIN=$(echo $EMIN+$REFENERGY | sed 's/--/+/g' | bc -l)
+for (( var=1 ; var <= $numSTEP ; var++ ))
+do
+	checkENERGY=$(echo "$PESraw" | grep Eigenvalues | awk '{for(i=3;i<=NF;++i)print $i}' | sed -n "$var"p)
+	checkVAR=$(echo "$PESraw" | grep "$SCANVAR" | awk '{for(i=2;i<=NF;++i)print $i}' | sed -n "$var"p)
+	
+	if [[ $checkENERGY =~ $re ]] ; then
+		((i++))
+		ENERGYABS[$i]=$(echo $checkENERGY+$REFENERGY | sed 's/--/+/g' | bc -l)
+		ENERGYREL[$i]=$(echo ${ENERGYABS[$i]}-$EMIN | sed 's/--/+/g' | bc -l)
+		ENERGYRELkcal[$i]=$(echo ${ENERGYREL[$i]}*627.5095 | bc -l | xargs printf "%.*f\n" 1)
+	fi
+	
+	if [[ $checkVAR =~ $re ]] ; then
+		((k++))
+		SCANVAL[$k]=$checkVAR
+	fi
+done
+
+if ! [ $i = $numSTEP ] ; then
+	echo "WARNING: $numSTEP optimization steps but $i energy values."
+fi
+
+if ! [ $k = $numSTEP ] ; then
+	echo "WARNING: $numSTEP optimization steps but $k $SCANVAR values."
+fi
+
+echo -e "$SCANVAR\tE_abs[a.u.]\tE_rel[kcal/mol]" >> PESdata
+for (( var=1 ; var <= $numSTEP ; var++ ))
+do
+	echo -e "${SCANVAL[$var]}\t${ENERGYABS[$var]}\t${ENERGYRELkcal[$var]}" >> PESdata
+done
+
+
+
+
+
+
+
