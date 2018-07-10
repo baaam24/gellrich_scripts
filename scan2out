@@ -4,6 +4,16 @@
 # Output: Converts an output-file of scan-computation in the current directory into a table giving the scanned variable and absolute and relative energies
 #
 
+SCRIPTDIR=`dirname $(readlink -f ${0})`
+while getopts ":h" OPTION; do
+        case $OPTION in
+                h)
+                        vim $SCRIPTDIR/help_scan2out.txt
+                        exit
+                ;;
+        esac
+done
+
 LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "*.out"`
 
 SCANVAR=$(grep Scan $LIST | grep -m1 ! | awk '{print $2}')

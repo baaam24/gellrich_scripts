@@ -1,0 +1,30 @@
+This is the help file for >>getIA<<
+
+getIA - calculates proton affinites (PAs), hydride affinites (HIAs), and exchange (XC) energies (in a.u.)
+
+PA:  B- + H+ = B-H
+HIA: LA+ + H- = LA-H
+XC: B-H = B- // LA-H = LA+
+
+(for further information ask Jama)
+
+implemented PA/HIA references: W1 (gaussian implementation: W1RO, W1U, W1BD)
+reference compound is: isobutane C4H10
+
+syntax: "getIA" within a directory containing proper out-files. The script distinguishes by itself the different out-files (anion/cation/neutral and gaussian/orca computation)
+note: getIA works with DFT results only but may give a syntax error due to the absence of particular DLPNO-CCSD(T) variables.
+
+getIA <arguments>
+
+Following commands are supported:
+
+-h	help
+	opens this help file
+-l	level of theory concerning PA/HIA reference (case-insensitive)
+	default: W1RO
+	options: W1RO, W1U, W1BD)
+-r	reference compound (formula or written name in either english or german)
+	default: isobutane (C4H10)
+
+
+

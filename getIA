@@ -1,26 +1,88 @@
 #!/bin/bash
 #
-# Calculate IA of a molecule of interest in the current directory
+# Calculate IA/XC energies of a molecule of interest in the current directory
 # Syntax: getIA
-# Output: HIA/PA in kcal/mol (dissociation enthalpy at 298.15 K)
+# Output: 
 #
 
-##### variables
-#unset SCFneut ZPVEneut Hcorrneut Eneut Hneut SCFcat ZPVEcat Hcorrcat Ecat Hcat HIAE HIAH HIAEkcal HIAHkcal
+#################################
+################ FUNCTIONS ######
+#################################
 
-unset HrefH HrefP
+#input: FILE
+function ident_SOFTW {
+#echo "debug: Enter ident_SOFTW"
+	unset orca_bool gaus_bool SOFTWARE
+	orca_bool=$(head -3 $FILE | grep -c "        * O   R   C   A *")
+	gaus_bool=$(head -3 $FILE | grep -c " Entering Gaussian System, Link 0")
+	if [ "$orca_bool" = "0" ] & [ "$gaus_bool" = "1" ]
+        then
+        SOFTWARE="gaussian"
+	fi
 
+	if [ "$orca_bool" = "1" ] & [ "$gaus_bool" = "0" ]
+        then
+        SOFTWARE="orca"
+	fi
+#echo "debug: Exist ident_SOFTW: $FILE $SOFTWARE"
+} #output: SOFTWARE
+
+#input: FILE
+function find_ENERGIES {
+#echo "debug: Enter find_ENERGIES"
+	unset E_SCF H_corr G_corr
+	ident_SOFTW
+	case $SOFTWARE in
+			gaussian)
+				E_SCF=$(tac $FILE | grep -m 1 "SCF Done:  " | awk '{print $5}')
+				H_corr=$(grep -A 8 "Zero-point correction=" $FILE | awk 'NF>1{print $NF}' | sed -n 3p)
+				G_corr=$(grep -A 8 "Zero-point correction=" $FILE | awk 'NF>1{print $NF}' | sed -n 4p)
+			;;
+			orca)
+				E_SCF=$(grep "FINAL SINGLE POINT ENERGY" $FILE | awk '{print $5}')
+			;;
+	esac
+#echo "debug: Exit find_ENERGIES: file=$FILE $E_SCF $H_corr $G_corr"
+} #output: E_SCF H_corr G_corr 
+
+##### LEVEL OF THEORY OF REFERENCE DISSOCIATION REACTION
+function LEVELOFTHEORY {
+#echo "debug: Enter LEVELOFTHEORY"
+LEVEL=$(echo $LEVEL | tr [:upper:] [:lower:])
+case $LEVEL in
+        g3)
+                LEVELPRINT=$(echo "G3 reference")
+        ;;
+        w1u)
+                LEVELPRINT=$(echo "W1U reference.")
+        ;;
+        w1bd)
+                LEVELPRINT=$(echo "W1BD reference.")
+        ;;
+		w1ro)
+                LEVELPRINT=$(echo "W1RO reference.")
+        ;;
+        \?)
+                echo "INVALID LEVEL OF THEORY"
+        ;;
+esac
+#echo "debug: Exit LEVELOFTHEORY: $LEVEL $LEVELPRINT"
+} #gives LEVELPRINT and LEVEL
+
+##### VARIABLES
 LEVEL=w1ro              # reference level of theory (Default: W1RO)
 REF=isobutane           # reference compound (Default: isobutane C4H10)
 
-FILEdft=opt.out; FILEdftcat=opt-cat.out; FILEdftan=opt-an.out
-FILEai=opt_SP.out; FILEaicat=opt-cat_SP.out; FILEaian=opt-an_SP.out
-
 ##### ARGUMENTS
 
-while getopts "l:r:" OPTION; do
+SCRIPTDIR=`dirname $(readlink -f ${0})`
+while getopts ":hl:r:" OPTION; do
         case $OPTION in
-                l)
+                h)
+			vim $SCRIPTDIR/help_getIA.txt
+			exit
+		;;
+		l)
                         LEVEL=$OPTARG
                 ;;
                 r)
@@ -29,189 +91,173 @@ while getopts "l:r:" OPTION; do
         esac
 done
 
-##### LEVEL OF THEORY OF REFERENCE DISSOCIATION REACTION
+#### nomenclature: 0 neutral, 1 cation, 2 anion
+unset LIST LISTARR[*]
+exist_bool[0]=0
+exist_bool[1]=0
+exist_bool[2]=0
+LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "*.out"`
+LISTARR=($LIST)
 
-function LEVELOFTHEORY {
-
-checkLEVEL=$(echo $LEVEL | tr [:upper:] [:lower:])
-
-case $checkLEVEL in
-        g3)
-                echo "G3 reference"
-        ;;
-        w1u)
-                echo "W1U reference."
-        ;;
-        w1bd)
-                echo "W1BD reference."
-        ;;
-		w1ro)
-                echo "W1RO reference."
-        ;;
-        \?)
-                echo "INVALID LEVEL OF THEORY"
-        ;;
-esac
-
-}
-
-##### REFERENCE COMPOUND
-
-function REFERENCE {
-
-checkREF=$(echo $REF | tr [:upper:] [:lower:])
-
-if [ "$checkREF" = "isobutane" ] || [ "$checkREF" = "isobutan" ] || [ "$checkREF" = "c4h10" ]
-then
-	echo "Reference compound: isobutane C4H10"
-	##### PBE0-D3(BJ)/def2-SVP NoSymm
-	HcorrrefH=0.123690; HcorrrefP=0.119490; Hcorrref=0.138288
-	ZPVErefH=0.116535; ZPVErefP=0.113044; ZPVEref=0.131681
-	ErefHdft=-157.242445836; ErefPdft=-157.459870714; Erefdft=-158.148143310
-	ErefHai=-157.219253426875; ErefPai=-157.448604227862; Erefai=-158.129600629701
-	
-	HrefHdft=$(echo "($ErefHdft+$ZPVErefH+$HcorrrefH)-($Erefdft+$ZPVEref+$Hcorrref)" | sed 's/--/+/g' | bc -l)
-	HrefPdft=$(echo "($ErefPdft+$ZPVErefP+$HcorrrefP)-($Erefdft+$ZPVEref+$Hcorrref)" | sed 's/--/+/g' | bc -l)
-	HrefHai=$(echo "($ErefHai+$ZPVErefH+$HcorrrefH)-($Erefai+$ZPVEref+$Hcorrref)" | sed 's/--/+/g' | bc -l)
-	HrefPai=$(echo "($ErefPai+$ZPVErefP+$HcorrrefP)-($Erefai+$ZPVEref+$Hcorrref)" | sed 's/--/+/g' | bc -l)
-		
-	#W1: structure in C3v, Cs, C3v [neutral, cationic, anionic]
-	case $checkLEVEL in
-        g3)
-				HrefH=0.389185;
-        ;;
-        w1u)
-                HrefH=0.393835; HrefP=0.655648
-        ;;
-        w1bd)
-                HrefH=0.393789; HrefP=0.655651
-        ;;
-		w1ro)
-                HrefH=0.393835; HrefP=0.655648
-        ;;
-        \?)
-                echo "INVALID LEVEL OF THEORY"
-        ;;
+for (( i=0 ; i < ${#LISTARR[@]} ; i++ ))
+do
+	FILE=$(echo ${LISTARR[$i]})
+	ident_SOFTW
+	case $SOFTWARE in 
+			gaussian)
+				CHARGE=$(grep -m1 Charge $FILE | awk '{print $3}')
+				case $CHARGE in
+						0)	
+							exist_bool[0]=1
+							find_ENERGIES
+							#echo "debug neutral $CHARGE: $E_SCF $H_corr $G_corr"
+							Hcorr[0]=$H_corr
+							Gcorr[0]=$G_corr
+							Habs_DFT[0]=$(echo $E_SCF+${Hcorr[0]} | sed 's/--/+/g' | bc -l)
+							Gabs_DFT[0]=$(echo $E_SCF+${Gcorr[0]} | sed 's/--/+/g' | bc -l)
+							#echo "debug neutral $CHARGE: ${Hcorr[0]} ${Gcorr[0]} ${Habs_DFT[0]} ${Gabs_DFT[0]}"
+						;;
+						1)
+							exist_bool[1]=1
+							find_ENERGIES
+							#echo "debug cation $CHARGE: $E_SCF $H_corr $G_corr"
+							Hcorr[1]=$H_corr
+							Gcorr[1]=$G_corr
+							Habs_DFT[1]=$(echo $E_SCF+${Hcorr[1]} | sed 's/--/+/g' | bc -l)
+							Gabs_DFT[1]=$(echo $E_SCF+${Gcorr[1]} | sed 's/--/+/g' | bc -l)
+							#echo "debug cation $CHARGE: ${Hcorr[1]} ${Gcorr[1]} ${Habs_DFT[1]} ${Gabs_DFT[1]}"
+						;;
+						-1)
+							exist_bool[2]=1
+							find_ENERGIES
+							Hcorr[2]=$H_corr
+							Gcorr[2]=$G_corr
+							Habs_DFT[2]=$(echo $E_SCF+${Hcorr[2]} | sed 's/--/+/g' | bc -l)
+							Gabs_DFT[2]=$(echo $E_SCF+${Gcorr[2]} | sed 's/--/+/g' | bc -l)
+						;;
+				esac
+			;;
+			orca)
+				CHARGE=$(grep -m1 Charge $FILE | awk '{print $NF}')
+				case $CHARGE in
+						0)
+							find_ENERGIES
+							E_ORCA[0]=$E_SCF
+						;;
+						1)
+							find_ENERGIES
+							E_ORCA[1]=$E_SCF
+						;;
+						-1)
+							find_ENERGIES
+							E_ORCA[2]=$E_SCF
+						;;
+				esac
+			;;
 	esac
+done
+#echo "debug: Exit loop ${E_ORCA[@]} ${Hcorr[@]} ${Gcorr[@]}"
 
-else
-	echo "Invalid reference compound."
+##### CALCULATION OF ABSOLUTE ENERIGES AT DLPNO-CCSD(T) LEVEL
+for i in 0 1 2; do
+	if [ "${exist_bool[$i]}" = "1" ] 
+	then 
+		#echo "debug: absolute energies: $i: ${E_ORCA[$i]}+${Hcorr[$i]}, ${E_ORCA[$i]}+${Gcorr[$i]}"
+		Habs[$i]=$(echo "${E_ORCA[$i]}+${Hcorr[$i]}" | sed 's/--/+/g' | bc -l)
+		Gabs[$i]=$(echo "${E_ORCA[$i]}+${Gcorr[$i]}" | sed 's/--/+/g' | bc -l)
+	fi
+done
+#echo "debug: Finish absolute energie calculations"
+
+#### REFERENCES
+REF=$(echo $REF | tr [:upper:] [:lower:])
+if [ "$REF" = "isobutane" ] || [ "$REF" = "isobutan" ] || [ "$REF" = "c4h10" ]
+then
+	ref=$(echo isobutane)
 fi
 
-}
+case $REF in
+	isobutane)
+				#### reference 1: C4H10 --> C4H9+ + H-	#HIA	
+				#### reference 2: C4H10 --> C4H9- + H+  #PA
+				LEVELOFTHEORY
+				case $LEVEL in 
+					g3)
+					ENTHALPY_REF[1]=; GIBBS_REF[1]=
+					ENTHALPY_REF[2]=;GIBBS_REF[2]=
+					;;
+					w1u)
+					ENTHALPY_REF[1]=0.393835; GIBBS_REF[1]=0.381054
+					ENTHALPY_REF[2]=0.655648; GIBBS_REF[2]=0.643881
+					;;
+					w1bd)
+					ENTHALPY_REF[1]=0.393789; GIBBS_REF[1]=0.381008
+					ENTHALPY_REF[2]=0.655651; GIBBS_REF[2]=0.643885
+					;;
+					w1ro)
+					ENTHALPY_REF[1]=0.393835; GIBBS_REF[1]=0.381054
+					ENTHALPY_REF[2]=0.655648; GIBBS_REF[2]=0.643881
+					;;
+				esac
+				ENTHALPY_XC_REF[1]=0.895749203; GIBBS_XC_REF[1]=0.893458203
+				ENTHALPY_XC_REF[2]=0.662198402; GIBBS_XC_REF[2]=0.662668402
+				ENTHALPY_DFT_XC_REF[1]=0.891099474; GIBBS_DFT_XC_REF[1]=0.888808474
+				ENTHALPY_DFT_XC_REF[2]=0.669474596; GIBBS_DFT_XC_REF[2]=0.669944596
+	;;
+    \?)
+    echo "INVALID REFERENCE"
+    ;;
+esac
+#echo "debug: Finish references"
 
-function FINDENERGIES {
+#########################################################
+############# CALCULATION OF ION AFFINITIES #############
+#########################################################
 
-unset SCFai SCFdft ZPVE Hcorr SCFaicat SCFdftcat ZPVEcat Hcorrcat SCFaian SCFdftan ZPVEan Hcorran HIAdft HIAai PAdft PAai
+# XC: YZ ---> Y+ + Z-
+#echo "debug: Enter XC calculation"
+for i in 1 2; do
+	if [ "${exist_bool[$i]}" = "1" ] 
+	then
+		XC_ENTHALPY[$i]=$(echo "${Habs[$i]}-${Habs[0]}" | sed 's/--/+/g' | bc -l)
+		XC_GIBBS[$i]=$(echo "${Gabs[$i]}-${Gabs[0]}" | sed 's/--/+/g' | bc -l)
+		XC_ENTHALPY_DFT[$i]=$(echo "${Habs_DFT[$i]}-${Habs_DFT[0]}" | sed 's/--/+/g' | bc -l)
+		XC_GIBBS_DFT[$i]=$(echo "${Gabs_DFT[$i]}-${Gabs_DFT[0]}" | sed 's/--/+/g' | bc -l)
+	fi
+done
+#echo "debug: Exit XC calculation"
 
-##### NEUTRAL ENERGIES
-if [ -f $FILEdft ]; then
-SCFdft=$(tac $FILEdft | grep -m 1 "SCF Done:  " | awk '{print $5}');
-ZPVE=$(grep -m 1 "Zero-point correction=" $FILEdft | awk '{print $3}');
-Hcorr=$(grep -A 8 "Zero-point correction=" $FILEdft | awk 'NF>1{print $NF}' | sed -n 3p);
-Hdft=$(echo $SCFdft+$ZPVE+$Hcorr | sed 's/--/+/g' | bc -l)
+# IA = REF - REF_XC + XC [ENTHALPIES]
+##echo "debug: Enter IA calculation"
+for i in 1 2; do
+	if [ "${exist_bool[$i]}" = "1" ] 
+	then
+		IA[$i]=$(echo "${ENTHALPY_REF[$i]}-${ENTHALPY_XC_REF[$i]}+${XC_ENTHALPY[$i]}" | sed 's/--/+/g' | bc -l)
+		IA_DFT[$i]=$(echo "${ENTHALPY_REF[$i]}-${ENTHALPY_DFT_XC_REF[$i]}+${XC_ENTHALPY_DFT[$i]}" | sed 's/--/+/g' | bc -l)
+	fi
+done
+HIA=${IA[1]}; HIA_DFT=${IA_DFT[1]}
+PA=${IA[2]}; PA_DFT=${IA_DFT[2]}
+#echo "debug: Exist IA calculation"
 
-if [ -f $FILEai ]; then
-SCFai=$(grep "FINAL SINGLE POINT ENERGY" $FILEai | awk '{print $5}')
-Hai=$(echo $SCFai+$ZPVE+$Hcorr | sed 's/--/+/g' | bc -l)
+########## OUTPUT
+unset PRINTOUT_CATION PRINTOUT_ANION
+LEVEL=$(echo $LEVEL | tr [:lower:] [:upper:])
+PRINT_FIRST=""
+
+if [ "${exist_bool[0]}" = "1" ] & [ "${exist_bool[1]}" = "1" ]
+then
+		PRINTOUT_CATION=$(echo "HIA=$HIA HIA_DFT=$HIA_DFT XC_GIBBS=${XC_GIBBS[1]} XC_ENTHALPY=${XC_ENTHALPY[1]} XC_GIBBS_DFT=${XC_GIBBS_DFT[1]} XC_ENTHALPY_DFT=${XC_ENTHALPY_DFT[1]}")	
 fi
 
+if [ "${exist_bool[0]}" = "1" ] & [ "${exist_bool[2]}" = "1" ]
+then
+		PRINTOUT_ANION=$(echo "PA=$PA PA_DFT=$PA_DFT XC_GIBBS=${XC_GIBBS[2]} XC_ENTHALPY=${XC_ENTHALPY[2]} XC_GIBBS_DFT=${XC_GIBBS_DFT[2]} XC_ENTHALPY_DFT=${XC_ENTHALPY_DFT[2]}")
 fi
 
-##### CATION ENERGIES
-if [ -f $FILEdftcat ]; then
-
-SCFdftcat=$(tac $FILEdftcat | grep -m 1 "SCF Done:  " | awk '{print $5}')
-ZPVEcat=$(grep -m 1 "Zero-point correction=" $FILEdftcat | awk '{print $3}')
-Hcorrcat=$(grep -A 8 "Zero-point correction=" $FILEdftcat | awk 'NF>1{print $NF}' | sed -n 3p)
-Hdftcat=$(echo $SCFdftcat+$ZPVEcat+$Hcorrcat | sed 's/--/+/g' | bc -l)
-
-if [ -f $FILEaicat ]; then
-SCFaicat=$(grep "FINAL SINGLE POINT ENERGY" $FILEaicat | awk '{print $5}')
-Haicat=$(echo $SCFaicat+$ZPVEcat+$Hcorrcat | sed 's/--/+/g' | bc -l)
-fi
-
-fi
-
-##### ANION ENERGIES
-if [ -f $FILEdftan ]; then
-
-SCFdftan=$(tac $FILEdftan | grep -m 1 "SCF Done:  " | awk '{print $5}')
-ZPVEan=$(grep -m 1 "Zero-point correction=" $FILEdftan | awk '{print $3}')
-Hcorran=$(grep -A 8 "Zero-point correction=" $FILEdftan | awk 'NF>1{print $NF}' | sed -n 3p)
-Hdftan=$(echo $SCFdftan+$ZPVEan+$Hcorran | sed 's/--/+/g' | bc -l)
-
-if [ -f $FILEaian ]; then
-SCFaian=$(grep "FINAL SINGLE POINT ENERGY" $FILEaian | awk '{print $5}')
-Haian=$(echo $SCFaian+$ZPVEan+$Hcorran | sed 's/--/+/g' | bc -l)
-fi
-
-fi
-
-##### SUM UP
-
-if [ ! -z "$Hdftcat" ]; then
-HHdft=$(echo "$Hdftcat-$Hdft" | sed 's/--/+/g' | bc -l)
-fi
-
-if [ ! -z "$Haicat" ]; then
-HHai=$(echo "$Haicat-$Hai" | sed 's/--/+/g' | bc -l)
-fi
-
-if [ ! -z "$Hdftan" ]; then
-HPdft=$(echo "$Hdftan-$Hdft" | sed 's/--/+/g' | bc -l)
-fi
-
-if [ ! -z "$Haian" ]; then
-HPai=$(echo "$Haian-$Hai" | sed 's/--/+/g' | bc -l)
-fi
-
-}
-
-function calcHIA {
-
-if [ ! -z "$HHai" ]; then
-HIAai=$(echo $HrefH+$HHai-$HrefHai | sed 's/--/+/g' | bc -l); HIAai=$(echo $HIAai*627.5095 | bc -l | xargs printf "%.*f\n" 3)
-echo "HIA(DLPNO-CCSD(T)): $HIAai"
-fi
-
-if [ ! -z "$HHdft" ]; then
-HIAdft=$(echo $HrefH+$HHdft-$HrefHdft | sed 's/--/+/g' | bc -l); HIAdft=$(echo $HIAdft*627.5095 | bc -l | xargs printf "%.*f\n" 3)
-echo "HIA(PBE0-D3(BJ)): $HIAdft"
-fi
-
-}
-
-function calcPA {
-
-if [ ! -z "$HPai" ]; then
-PAai=$(echo $HrefP+$HPai-$HrefPai | sed 's/--/+/g' | bc -l); PAai=$(echo $PAai*627.5095 | bc -l | xargs printf "%.*f\n" 3)
-echo "PA(DLPNO-CCSD(T)): $PAai"
-fi
-
-if [ ! -z "$HPdft" ]; then
-PAdft=$(echo $HrefP+$HPdft-$HrefPdft | sed 's/--/+/g' | bc -l); PAdft=$(echo $PAdft*627.5095 | bc -l | xargs printf "%.*f\n" 3)
-echo "PA(PBE0-D3(BJ)): $PAdft"
-fi
-
-}
-
-### OUTPUT
-
-LEVELOFTHEORY
-REFERENCE
-FINDENERGIES
-calcHIA
-calcPA
-
-#echo $SCFdftcat $ZPVEcat $Hcorrcat
-#echo $SCFdft $ZPVE $Hcorr
-#echo $HHdft = $Hdftcat - $Hdft 
-#echo "bugfix: $HrefH $HHdft $HrefHdft"
-
-
-
-
+count=$(pwd | rev | cut -d'/' -f1 | rev)
+echo "reference: $REF ($LEVEL)"
+echo -e "$count\t$PRINTOUT_CATION $PRINTOUT_ANION"
 
 
 

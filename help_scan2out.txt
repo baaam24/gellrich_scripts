@@ -1,0 +1,16 @@
+This is the help file for >>scan2out<<
+
+scan2out - converts a relaxed PES scan into a file (PES-data) containing the scanned variable vs absolute (a.u.) and relative (kcal/mol) energies
+
+syntax: "scan2out" within a directory containing a scan-computation. 
+note: scan2out is currently limited to single scan computations within a directory.
+
+scan2out <arguments>
+
+Following commands are supported:
+
+-h	help
+	opens this help file
+
+
+
