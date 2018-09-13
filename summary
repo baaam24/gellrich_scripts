@@ -207,8 +207,13 @@ TEST=`grep -m 1 -c "SCF Done:  " $FILEPATH`
 fi
 
 if [ $PROGNAME = "ORCA" ]
+then
+TEST=`grep -m 1 -c "FINAL SINGLE POINT ENERGY" $FILEPATH`
+	if [ "$TEST" != 0 ]
 	then
-	ENERG_EL=`tac $FILEPATH | grep -m 1 "FINAL SINGLE POINT ENERGY"  | awk '{print $5}'`
+	ENERG_EL=`tac $FILEPATH | grep -m 1 "FINAL SINGLE POINT ENERGY" | awk '{print $5}'`
+	fi
+#	ENERG_EL=`tac $FILEPATH | grep -m 1 "FINAL SINGLE POINT ENERGY"  | awk '{print $5}'`
 fi
 
 }
