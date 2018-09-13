@@ -164,7 +164,7 @@ fi
 if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
 	then
 	PROGNAME="ORCA"
-	NOTES+="ORCA_not_fully_implemented"
+	NOTES+="ORCA_in_dev"
 fi
 }
 
@@ -317,10 +317,10 @@ if [ "$PROGNAME" = "Gaussian" ]
 		elif [ "$ET" = "1" ]
 		then
 		JOBSTATE="F-ET"
-		NOTES+=" Error_termination"
+		NOTES+="Error_termination"
 		else
 		JOBSTATE="unknown"
-		NOTES+=" Job_running_or_crashed"
+		NOTES+="Job_running_or_crashed"
 	fi
 	
 fi
@@ -340,10 +340,10 @@ fi
 		elif [ "$ET" = "1" ]
 		then
 		JOBSTATE="F-ET"
-		NOTES+=" Error_termination"
+		NOTES+="Error_termination"
 		else
 		JOBSTATE="unknown"
-		NOTES+=" Job_running_or_crashed"
+		NOTES+="Job_running_or_crashed"
 	fi
 
 
