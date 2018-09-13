@@ -208,7 +208,7 @@ fi
 
 if [ $PROGNAME = "ORCA" ]
 	then
-	ENERG_EL=`grep "FINAL SINGLE POINT ENERGY" $FILEPATH | awk '{print $5}'`
+	ENERG_EL=`tac $FILEPATH | grep -m 1 "FINAL SINGLE POINT ENERGY"  | awk '{print $5}'`
 fi
 
 }
