@@ -327,8 +327,25 @@ fi
 
 if [ $PROGNAME = "ORCA" ]
 then
-	RUNTIME=`tail -1 $FILEPATH | grep "TOTAL RUN TIME:" | awk '{print $4 ":" $6 ":" $8 ":" $10 "." $12}'`
+	TEMP=`tail -n 7 $FILEPATH `
+	RUNTIME=`tail -1 $TEMP | grep "TOTAL RUN TIME:" | awk '{print $4 ":" $6 ":" $8 ":" $10 "." $12}'`
 fi
+
+	NT=`echo "$TEMP" | grep -c "ORCA TERMINATED NORMALLY" `
+	#ET=`echo "$TEMP" | grep -c "Error termination request processed"`
+	#had no examples at hand: inserted for later fix
+	if [ "$NT" = "1" ]
+		then
+		JOBSTATE="F-NT"
+		elif [ "$ET" = "1" ]
+		then
+		JOBSTATE="F-ET"
+		NOTES+=" Error_termination"
+		else
+		JOBSTATE="unknown"
+		NOTES+=" Job_running_or_crashed"
+	fi
+
 
 }
 
