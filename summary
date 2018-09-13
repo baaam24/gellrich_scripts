@@ -328,7 +328,7 @@ fi
 if [ $PROGNAME = "ORCA" ]
 then
 	TEMP=`tail -n 7 $FILEPATH `
-	RUNTIME=`tail -1 $TEMP | grep "TOTAL RUN TIME:" | awk '{print $4 ":" $6 ":" $8 ":" $10 "." $12}'`
+	RUNTIME=`echo "$TEMP" | grep "TOTAL RUN TIME:" | awk '{print $4 ":" $6 ":" $8 ":" $10 "." $12}'`
 fi
 
 	NT=`echo "$TEMP" | grep -c "ORCA TERMINATED NORMALLY" `
