@@ -324,6 +324,12 @@ if [ "$PROGNAME" = "Gaussian" ]
 	fi
 	
 fi
+
+if [ $PROGNAME = "ORCA" ]
+then
+	RUNTIME=`tail -1 $FILEPATH | grep "TOTAL RUN TIME:" | awk '{print $4 ":" $6 ":" $8 ":" $10 "." $12}'`
+fi
+
 }
 
 function reset_vars { # set all variables to NA to resolve issues in console output 
