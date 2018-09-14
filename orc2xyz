@@ -1,0 +1,38 @@
+#!/bin/bash
+
+
+while getopts "f:" OPTION
+do
+	case $OPTION in 
+	f)
+		FILE=$OPTARG
+		;;
+	*)
+		echo -e "Usage of nonexistent flag.\033[31m Aborting.\033[0m"
+		exit
+		;;
+	esac
+done
+
+
+
+
+
+
+
+grep "| " $FILE | grep -m 2 "*" | sed -e 's/>//g' > tmp.txt
+
+
+begin=`head -1 tmp.txt | awk '{print $2}' `
+end=`tail -1 tmp.txt | awk '{print $2}'`
+
+NAtoms=`echo " $end - $begin - 1" | bc `
+
+NAtomsPlus=` echo "$NAtoms + 6" | bc ` 
+
+COORDS=`tac $FILE | grep  -m 1 -B $NAtomsPlus "FINAL ENERGY EVALUATION AT THE STATIONARY POINT" | tac | sed -e '1,6d' `
+
+echo $COORDS > $FILE.xyz
+
+
+rm tmp.txt
