@@ -15,22 +15,26 @@ do
 done
 
 
-
-
-
-
+echo "now starting"
 
 grep "| " $FILE | grep -m 2 "*" | sed -e 's/>//g' > tmp.txt
 
+echo "positions for NAtom calc. found"
 
 begin=`head -1 tmp.txt | awk '{print $2}' `
 end=`tail -1 tmp.txt | awk '{print $2}'`
+
+echo "numers extracted"
 
 NAtoms=`echo " $end - $begin - 1" | bc `
 
 NAtomsPlus=` echo "$NAtoms + 6" | bc ` 
 
+echo "stuff calculated"
+
 COORDS=`tac $FILE | grep  -m 1 -B $NAtomsPlus "FINAL ENERGY EVALUATION AT THE STATIONARY POINT" | tac | sed -e '1,6d' `
+
+echo "nur noch schreiben der txt datei"
 
 echo $COORDS > $FILE.xyz
 
