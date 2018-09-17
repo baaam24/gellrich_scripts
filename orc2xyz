@@ -36,7 +36,7 @@ COORDS=`tac $FILE | grep  -m 1 -B $NAtomsPlus "FINAL ENERGY EVALUATION AT THE ST
 
 echo "nur noch schreiben der txt datei"
 
-echo $COORDS > $FILE.xyz
+echo -e $COORDS > $FILE.xyz
 
 
 rm tmp.txt
