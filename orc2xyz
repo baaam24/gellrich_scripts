@@ -36,9 +36,9 @@ COORDS=`tac $FILE | grep  -m 1 -B $NAtomsPlus "FINAL ENERGY EVALUATION AT THE ST
 
 NEWFILE=`echo $FILE | sed -e s@.out@@g `
 
-echo -e "$NAtoms "
-echo -e " "
-echo -e "$COORDS" > $NEWFILE.xyz
+echo -e "$NAtoms "> $NEWFILE.xyz
+echo -e " " >> $NEWFILE.xyz
+echo -e "$COORDS" >> $NEWFILE.xyz
 
 
 rm tmp.txt
