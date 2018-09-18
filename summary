@@ -2,11 +2,6 @@
 #
 # create summarys of your computations 
 #
-# version history:
-#
-# version 0.1: (19.01.2018) 
-# Tizian Müller: 
-# - basic stuff with gaussian .out-Files
 # script is not fully tested. Use at your own risk
 # please report any bugs and suggestions via mail or during cigarette breaks
 #
@@ -15,7 +10,7 @@
 
 
 # difine variables
-VERSION="0.1"
+VERSION="0.2" # basic ORCA implementation done
 USERFILEPATH=`whoami`
 DIR=`pwd`
 HOST=`ident_host | awk '{print $1}'`
@@ -164,7 +159,6 @@ fi
 if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
 	then
 	PROGNAME="ORCA"
-	NOTES+="ORCA_in_dev"
 fi
 }
 
@@ -180,9 +174,18 @@ TEST=`grep -m 1 "GINC-" $FILEPATH `
 	fi
 fi
 
+
+if [ $PROGNAME = "ORCA" ]
+then
+RAW=`grep "| " $FILEPATH  | grep "!"`
+METH=` echo $RAW | awk '{print $4}'`
+BASIS=`echo $RAW | awk '{print $5}'`
+fi
 }
 
 function find_coords {
+
+
 
 NATOMS=`grep -m 1 "NAtoms=" $FILEPATH | awk '{print $2}' | sed -e 's/ //g'`
 
@@ -218,7 +221,7 @@ fi
 
 }
 
-function find_ther_corr { # finds the themal corrections for electronic Energy
+function find_ther_corr { # finds the themal corrections to electronic Energy
  
  
 if [ $PROGNAME = "Gaussian" ]
@@ -226,15 +229,48 @@ then
 TEST=`grep -c -i "Zero-point correction=" $FILEPATH `
 	if [ "$TEST" != "0" ]
 	then
-	ZPVE=`grep -m 1 "Zero-point correction=" $FILEPATH | awk '{print $3}'`
-	RAW=`grep -A 8 "Zero-point correction=" $FILEPATH| awk 'NF>1{print $NF}'`
-	RAWARRAY=($RAW)
- 
-	ENERG_THERM=${RAWARRAY[1]}
-	ENTHALPY=${RAWARRAY[2]}
-	GIBBS=${RAWARRAY[3]}
+	
+	TEST=`grep -m 1 -A 8 "Zero-point correction=" $FILEPATH`
+	
+	ZPVE=`       echo -e "$TEST"| grep "Zero-point correction=" | awk '{print $3}'`	
+	ENERG_THERM=`echo -e "$TEST"| grep "Thermal correction to Energy=" | awk '{print $5}'`
+	ENTHALPY=`  echo -e "$TEST" | grep "Thermal correction to Enthalpy=" | awk '{print $5}'`
+	GIBBS=`    echo  -e "$TEST" | grep "Thermal correction to Gibbs Free Energy=" | awk '{print $7}'`
+	
+	# version discarded to enhance readability
+#	RAW=`grep -A 8 "Zero-point correction=" $FILEPATH| awk 'NF>1{print $NF}'`
+#	RAWARRAY=($RAW)
+# 
+#	ENERG_THERM=${RAWARRAY[1]}
+#	ENTHALPY=${RAWARRAY[2]}
+#	GIBBS=${RAWARRAY[3]}
 	fi
 fi
+
+
+if [ $PROGNAME = "ORCA" ]
+then
+TEST=`grep -c "Analytical frequency calculation" $FILEPATH `
+	if [ "$TEST" != "0" ]
+	then
+	
+	# the Following Correctiosn can be found directly in the output. analogous to the Corrections found in Gaussian outputs
+	ZPVE=`grep "Zero point energy" $FILEPATH | awk '{print $5}'`
+	ENERG_THERM=`grep "Total correction" $FILEPATH | awk '{print $3}'`
+	GIBBS=`grep "G-E(el)" $FILEPATH | awk '{print $3}'`
+	
+	# ORCA adds up the coorections subsequently to on another.
+	# The "Thermal Enthalpy correction" has to be addet to the "Total correction"  (ZPVE + thermal correction)
+	# to yield the same correction as stated by gaussian (based on Electronic energy )
+	#[ORCA gives the enthalpy correction based on the Total free energy]
+	TOTALCORRECTION=`grep "Total correction" $FILEPATH | awk '{print $3}'`
+	ENTHALPYCORRECTION=`grep "Thermal Enthalpy correction" $FILEPATH | awk '{print $5}'`
+	ENTHALPY=`echo "$TOTALCORRECTION + $ENTHALPYCORRECTION | bc" `
+
+
+	fi
+fi
+
 
 }
 
@@ -250,8 +286,14 @@ TEST=`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH`
 	IMAG=`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH | awk '{print $2}'`
 	fi
 fi
-#then IMAG="0"
-	#else IMAG="`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH | awk '{print $2}'`"
+
+if [ $PROGNAME = "ORCA" ]
+then
+
+IMAG=`grep -c  "imaginary mode" $FILEPATH ` 
+
+fi
+
 
 }
 
@@ -299,6 +341,17 @@ then
 	PROG=`echo $RAW | awk '{print $5 $6}' | sed 's/,//g'`
 	REV=`echo $RAW | awk '{print $8}' | sed 's/,//g'`
 fi
+
+if [ $PROGNAME = "ORCA" ]
+then
+	RAW=`grep "Program Version" $FILEPATH`
+	REV=`echo $RAW | awk '{print $3}'`
+	PROG_RAW=`echo $REV | sed 's@\.@ @g' | awk '{print $1}'`
+	PROG=`echo " $PROGNAME $PROG_RAW "`
+	
+fi
+
+
 }
 
 function find_runtime {
@@ -306,7 +359,7 @@ function find_runtime {
 if [ "$PROGNAME" = "Gaussian" ]
 	then
 	TEMP=`tail -n 7 $FILEPATH `
-	RUNTIME=`echo "$TEMP" | grep " Job cpu time:" | awk '{print $4":"$6":"$8":" $10}'`
+	RUNTIME=`echo "$TEMP" | grep "Elapsed time" | awk '{print $3":"$5":"$7":" $9}'`
 	
 	NT=`echo "$TEMP" | grep -c "Normal termination of Gaussian" `
 	ET=`echo "$TEMP" | grep -c "Error termination request processed"`
@@ -329,7 +382,6 @@ if [ $PROGNAME = "ORCA" ]
 then
 	TEMP=`tail -n 7 $FILEPATH `
 	RUNTIME=`echo "$TEMP" | grep "TOTAL RUN TIME:" | awk '{print $4 ":" $6 ":" $8 ":" $10 "." $12}'`
-fi
 
 	NT=`echo "$TEMP" | grep -c "ORCA TERMINATED NORMALLY" `
 	#ET=`echo "$TEMP" | grep -c "Error termination request processed"`
@@ -345,7 +397,7 @@ fi
 		JOBSTATE="unknown"
 		NOTES+="Job_running_or_crashed"
 	fi
-
+fi
 
 }
 
