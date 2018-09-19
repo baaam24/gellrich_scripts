@@ -9,7 +9,7 @@
 
 
 
-# difine variables
+# define variables
 VERSION="0.2" # basic ORCA implementation done
 USERFILEPATH=`whoami`
 DIR=`pwd`
@@ -28,7 +28,8 @@ SI_vers=0 # which kind of SI file is written ( Default: 0 = none )
 VARFILE=all # given output-file for analysis ( Default: all ) #TIZIAN  
 
 
-
+######################################################
+#            Functions for reading various stuff
 
 function prnt_error {
 echo -e  "\033[0;31m ERROR ! stopping script \033[0m "
@@ -42,98 +43,6 @@ function prnt_ok {
 echo -e -n "\033[0;32m OK: \033[0m "
 }
 
-## here schould be some sort of check for arguments
-
-while getopts ":hd:s:cn:vi:f:" OPTION; do	#TIZIAN
-  case $OPTION in
-    h) 
-	vim $SCRIPTDIR/help_summary.txt  
-	exit
-	;;
-	d)
-	CSVDELIM=$OPTARG
-	;;
-	s)
-	DECISEP=$OPTARG
-	;;
-	c)
-	DEPTH=0
-	;;
-	n)
-	DEPTH=$OPTARG
-	;;
-	v)
-	VERBOSITY=1
-	;;
-	i)
-	SI_vers=$OPTARG
-	;;
-	f)					#TIZIAN
-	VARFILE=$OPTARG
-	;;
-    \?)
-	prnt_error
-    echo "Invalid option: -$OPTARG" >&2
-	echo "For Help type: sumary -h"
-	exit
-    ;;
-  esac
-done
-
-
-
-# show welcome message
-echo -n "summary version $VERSION    "
-
-#Defining the depth of search (-c -n) or output file (-f)
-
- case $VARFILE in								#TIZIAN
-         all)
-         case $DEPTH in
-                 all)
-                 LIST=`find ! -name 'slurm*.out' -name "*.out"`
-                 echo "... searching in all subfolders"
-                 ;;
-                 0)
-                 LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "*.out"`
-                 echo "... searching in only the currend folder"
-                 ;;
-                 *)
-                 echo "... searching this and $DEPTH subfolders"
-                 DEPTH=`echo "$DEPTH + 1"  | bc`
-                 LIST=`find -maxdepth $DEPTH ! -name 'slurm*.out' -name "*.out"`
-                 ;;
-         esac
-         LISTARR=($LIST)
-         ;;
-         *)									#TIZIAN 
-         echo "... search for file: "$VARFILE""
-         LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "$VARFILE"`
-         LISTARR=($LIST)
-         ;;
- esac
-
-
-
-# asks for user reply if too much files are found
-
-if [ ${#LISTARR[@]} -gt $MAXFILES ]
-then
-	prnt_warning
-	echo "found a large amount of OUT files"
-	echo "${#LISTARR[@]} / $MAXFILES"
-	read -p "Do you want to proceed ? " -n 1 -r 
-		case $REPLY in
-        [Yy]* ) echo "  OK";;
-        [Nn]* ) echo ""; exit;;
-        * ) echo "  Please answer Y or N."; exit ;;
-        esac
-else echo "found ${#LISTARR[@]} OUT files ... starting now"
-fi
-
-
-######################################################
-#            Functions for reading various stuff
 
 function format_strings { # formats stuff like the full path to the file, the dir in which the file is stored and the filename
 FILENAME=`echo " $FILEPATH" | sed -e 's@\/@ @g' | awk '{print $NF}'`
@@ -516,6 +425,101 @@ NOTES+="SI_written_(TXT)"
 
 }
 
+######################################################
+#            end of functions block
+
+
+#           start of actual script
+######################################################
+
+
+# show welcome message
+echo -n "summary version $VERSION    "
+
+while getopts ":hd:s:cn:vi:f:" OPTION; do	# read variables
+  case $OPTION in
+    h) 
+	vim $SCRIPTDIR/help_summary.txt  
+	exit
+	;;
+	d)
+	CSVDELIM=$OPTARG
+	;;
+	s)
+	DECISEP=$OPTARG
+	;;
+	c)
+	DEPTH=0
+	;;
+	n)
+	DEPTH=$OPTARG
+	;;
+	v)
+	VERBOSITY=1
+	;;
+	i)
+	SI_vers=$OPTARG
+	;;
+	f)					#TIZIAN
+	VARFILE=$OPTARG
+	;;
+    \?)
+	prnt_error
+    echo "Invalid option: -$OPTARG" >&2
+	echo "For Help type: sumary -h"
+	exit
+    ;;
+  esac
+done
+
+
+#Defining the depth of search (-c -n) or output file (-f)
+
+ case $VARFILE in								#TIZIAN
+         all)
+         case $DEPTH in
+                 all)
+                 LIST=`find ! -name 'slurm*.out' -name "*.out"`
+                 echo "... searching in all subfolders"
+                 ;;
+                 0)
+                 LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "*.out"`
+                 echo "... searching in only the currend folder"
+                 ;;
+                 *)
+                 echo "... searching this and $DEPTH subfolders"
+                 DEPTH=`echo "$DEPTH + 1"  | bc`
+                 LIST=`find -maxdepth $DEPTH ! -name 'slurm*.out' -name "*.out"`
+                 ;;
+         esac
+         LISTARR=($LIST)
+         ;;
+         *)									#TIZIAN 
+         echo "... search for file: "$VARFILE""
+         LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "$VARFILE"`
+         LISTARR=($LIST)
+         ;;
+ esac
+
+
+
+# asks for user reply if too much files are found
+
+if [ ${#LISTARR[@]} -gt $MAXFILES ]
+then
+	prnt_warning
+	echo "found a large amount of OUT files"
+	echo "${#LISTARR[@]} / $MAXFILES"
+	read -p "Do you want to proceed ? " -n 1 -r 
+		case $REPLY in
+        [Yy]* ) echo "  OK";;
+        [Nn]* ) echo ""; exit;;
+        * ) echo "  Please answer Y or N."; exit ;;
+        esac
+else echo "found ${#LISTARR[@]} OUT files ... starting now"
+fi
+
+
 
 ######################################################
 # initialisation of the *.csv files
@@ -558,11 +562,13 @@ esac
 
 
 #table headers for console output
+
+
 case $VERBOSITY in
 	0)
-	echo "      FILEPATH            |  E(SCF)    |  ZP      | G(korr)   |NT |IF |Program   |   notes"
-	echo "--------------------------+------------+----------+-----------+---+---+----------+----------- "
-	#     8_PBE0_D3_def2SVp_stacke  | -          | -        | -         | 0 | 0 | Gaussian | Job_running_or_crashed
+	echo "      FILEPATH            |  E(SCF)    |  ZP      | G(korr)  |NT |IF  |Program   |   notes"
+	echo "--------------------------+------------+----------+----------+---+----+----------+----------- "
+	#     1-H2.out                  | -1958.4542 | 0.325657 | 0.269497 | 1 |  0 |     ORCA |                                |
 	;;
 	1)
 	echo "$ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS" #TIZIAN
@@ -576,10 +582,9 @@ esac
 for FILEPATH in "${LISTARR[@]}" ; do
 
 NOTES=""
-
 reset_vars
 
-
+# gathering Informations
 ident_prog
 format_strings
 find_methode
@@ -589,7 +594,11 @@ find_Nimag
 find_NTerm
 find_version
 find_runtime
-#FILEPATH=`echo $FILEPATH | sed -e 's/\.//g' `
+
+
+# Output of Informations to the CSV-File
+
+echo "$FULLPATH;$FILENAME;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTERM;$PROG;$REV;$RUNTIME;$NOTES" >> $CSVFILEFILEPATH
 
 
 
@@ -617,25 +626,29 @@ case $SI_vers in # checking for valid SI version
 esac
 
 
-
-
-
-
 #console output
+
 case $VERBOSITY in
 	0)
-	ENERG_EL_FORM=`echo "$ENERG_EL" | cut -c -10 `
-	printf '%-25s | %-10s | %-8s | %-9s | %-1s | %-1s | %-8s | %-30s \n' $FILENAMFORMATTED $ENERG_EL_FORM $ZPVE $GIBBS $NTERM $IMAG $PROGNAME $NOTES
-	#echo " $FILENAMFORMATTED $ENERG_EL_FORM $ZPVE $GIBBS $NTERM $IMAG $PROGNAME $NOTES "
+	
+	# Formating of the displayed Variables:
+	#ENERG_EL_FORM=`echo "$ENERG_EL" | cut -c -10 `
+	
+	
+	printf '%-25s | ' $FILENAMFORMATTED 
+	printf '%10.10s | ' $ENERG_EL
+	printf '%8.8s | ' $ZPVE 
+	printf '%8.8s | ' $GIBBS 
+	printf '%1.1s | ' $NTERM 
+	printf '%2.2s | ' $IMAG 
+	printf '%8s | ' $PROGNAME 
+	printf '%-30s ' $NOTES
+	printf '\n'
 	;;
 	1)
 	echo "$ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS"	#TIZIAN
 	;;
 esac
-
-# CSV Output
-
-echo "$FULLPATH;$FILENAME;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTERM;$PROG;$REV;$RUNTIME;$NOTES" >> $CSVFILEFILEPATH
 
 
 done
