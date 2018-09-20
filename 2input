@@ -176,7 +176,6 @@ if [ $dateiendung = ".out" ]; then
 
 	if [ "$IDENTORCA" = "0" ] & [ "$IDENTGAUSSIAN" = "1" ]
 		then
-		PROGNAME="Gaussian"
 		echo -e "Input-File $file is an Gaussian .out-File. Convert to .xyz."
 
 		charge=$(grep Multiplicity $file | head -1 | awk '{print $3}')
@@ -190,7 +189,6 @@ if [ $dateiendung = ".out" ]; then
 
 	if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
 		then
-		PROGNAME="ORCA"
 		echo -e "Input-File $file is an ORCA .out-File. Convert to .xyz."
 
 		charge=$(grep "Total Charge" $file | head -1 | awk '{print $5}')
@@ -212,8 +210,7 @@ fi
 ################################################################
 
 if [ $(grep -c '[[:upper:]]' $coords) -ne 0 ]; then
-
-	sed -i '1d;2d' $file
+	sed -i '1d;2d' $coords
 fi 
 
 ####################################################################
