@@ -1,0 +1,252 @@
+#!/bin/bash
+
+# Default Parameter:
+multi=1
+charge=0
+programm=gaussian
+
+proz_g16=12
+proz_orc=6
+
+mem_g16=10000
+mem_orc=4000
+
+route_g16_of="# pbe1pbe/def2SVP opt freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3bj"
+route_g16_ts="# pbe1pbe/def2SVP opt=(ts,noeigen,calcfc) freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3bj"
+
+route_orc_sp="! DLPNO-CCSD(T) def2-TZVP NoUseSym  def2-TZVP/C tightscf"
+route_orc_of="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF Opt Freq"
+route_orc_ts="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF OptTS Freq"
+
+while getopts "f:stH:n:M:hSc:m:" OPTION
+do
+	case $OPTION in 
+	# general Variables
+	m)
+		multi=$OPTARG
+	;;
+	c) 
+		charge=$OPTARG
+	;;
+	f)
+		file=$OPTARG
+	;;
+	n)
+		prozessoren=$OPTARG
+	;;
+	M)
+		hauptspeicher=$OPTARG
+	;;
+	H)
+		stunden=$OPTARG
+		;;
+	s)
+		ausfuehren=true
+	;;
+	#compatibility stuff / shortcuts
+	t) # kept for compatibility
+		program=gaussian
+		route=$route_g16_of
+	;;
+	S)
+		programm=orca
+		prozessoren=$proz_orc
+		hauptspeicher=$mem_orc
+		route=$route_orc_sp
+	;;
+	g)#call of an gaussian calculation
+	;;
+	o)#call of an gaussian calculation
+	;;
+	h)
+		help_pfad=$(dirname $0)
+		vim "$help_pfad/help2_input.txt"  
+		exit
+		;;
+	*)
+		echo -e "Usage of nonexistent flag.\033[31m Aborting.\033[0m"
+		exit
+		;;
+	esac
+done
+
+################Leerzeile fuer schoenere Formatierung######
+echo ""
+
+#########################################################
+#Eingabe wird auf potentielle Fehler ueberprueft
+#########################################################
+
+dateiendung=$(echo $file | grep -o -E "(.xyz|.out)\>")
+
+if [ ! -f "$file" ]; then
+	echo -e "No Input-File or File does not exist (use the flag -f).\033[31m Aborting.\033[0m"
+	echo "################################################################"
+	exit
+fi
+
+if [ -z "$dateiendung" ]; then
+	echo -e "\033[31mInput-File $file is no .xyz or .out File. Aborting.\033[0m"
+	echo "################################################################"
+	exit
+fi
+
+if [ "$transition_state" = "true" ] && [ "$programm" = "orca" ]; then
+	echo -e "\033[31mTransition state with an ORCA single point calculation is not possible. Aborting.\033[0m"
+	echo "################################################################"
+	exit
+fi
+
+################################################################
+#Falls es sich beim Input, um eine .out-Datei handelt, wird diese
+#in eine xyz-Datei umgewandelt
+################################################################
+
+
+if [ $dateiendung = ".out" ]; then
+
+	FILEHEAD=`head -3 $file `
+	IDENTORCA=`echo "$FILEHEAD"| grep -c "        * O   R   C   A *"`
+	IDENTGAUSSIAN=`echo "$FILEHEAD"| grep -c " Entering Gaussian System, Link 0"`
+
+	PROGID=0
+	PROGNAME="none"
+
+	if [ "$IDENTORCA" = "0" ] & [ "$IDENTGAUSSIAN" = "1" ]
+		then
+		PROGNAME="Gaussian"
+		echo -e "Input-File $file is an Gaussian .out-File. Convert to .xyz."
+
+		charge=$(grep Multiplicity $file | head -1 | awk '{print $3}')
+		multi=$(grep Multiplicity $file | head -1 | awk '{print $6}') 
+	
+		echo "Charge and Multiplicity were adopted from $file and set to $charge and $multi."
+	
+		out2xyz $file
+		file=${file/.out}.xyz
+	fi 
+
+	if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
+		then
+		PROGNAME="ORCA"
+		echo -e "Input-File $file is an ORCA .out-File. Convert to .xyz."
+
+		charge=$(grep "Total Charge" $file | head -1 | awk '{print $5}')
+		multi=$(grep "Multiplicity" $file | head -1 | awk '{print $4}') 
+	
+		echo "Charge and Multiplicity were adopted from $file and set to $charge and $multi."
+	
+		orc2xyz -f $file
+		file=${file/.out}.xyz
+	fi
+
+fi
+
+################################################################
+#Ueberprueft anhand der Symbole fuer die Atomarten in der xyz-Datei
+#(Chemcraft verwendet Zahlen, Avogadro Buchstaben), ob es sich um
+#eine xyz-Datei aus Avogadro oder Gaussian handelt. Im Falle von
+#Avogadro loescht er die ersten beiden Zeilen
+################################################################
+
+if [ $(grep -c '[[:upper:]]' $file) -ne 0 ]; then
+
+	sed -i '1d;2d' $file
+fi 
+
+####################################################################
+#Falls nicht der Flag -S gesetzt wurde, wird die Datei in die Input-
+#Datei fuer die Gaussian Optimierungen umgewandelt
+####################################################################
+			if [ $programm = gaussian ]; then
+	
+sed -i "1i$charge $multi" $file
+sed -i '1ipufferzeile' $file
+sed -i "1i${file/.xyz}" $file
+sed -i '1ipufferzeile' $file
+sed -i "1i$route" $file
+sed -i "1i\%mem=${hauptspeicher}MB" $file
+sed -i "1i\%nprocshared=${prozessoren}" $file
+sed -i "1i\%chk=${file/.xyz}.chk" $file
+
+echo 'pufferzeile' >> $file
+echo 'pufferzeile' >> $file
+echo 'pufferzeile' >> $file
+echo 'pufferzeile' >> $file
+
+sed -i 's/pufferzeile//g' $file
+
+######################################################################
+#Wenn ein TS-Input erstellt und die Datei noch kein TS-Präfix besitzt,
+#benennt das Skript die Datei mit dem Praefix TS_ um
+######################################################################
+
+if [ "$transition_state" = "false" ]; then
+	mv $file ${file/.xyz}.dat
+	echo -e "\033[1;32mGaussian16\033[0m input file \033[1;32m${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
+else
+	ts_praefix=$(echo $file | grep -o 'TS_')
+	prep_suffix=$(echo $file | grep -o '_prep')
+
+	if [ "$ts_praefix" != "TS_" ] && [ "$prep_suffix" != "_prep" ]; then
+		mv $file TS_${file/.xyz}.dat
+		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
+	fi
+
+	if [ "$ts_praefix" = "TS_" ] && [ "$prep_suffix" != "_prep" ]; then
+		mv $file ${file/.xyz}.dat
+		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
+	fi
+
+	if [ "$ts_praefix" != "TS_" ] && [ "$prep_suffix" = "_prep" ]; then
+		mv $file TS_${file/_prep.xyz}.dat
+		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/_prep.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
+	fi
+
+	if [ "$ts_praefix" = "TS_" ] && [ "$prep_suffix" = "_prep" ]; then
+		mv $file ${file/_prep.xyz}.dat
+		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/_prep.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
+	fi
+fi
+
+					fi
+######################################################################
+#Ende des Erstellens der Gaussian-Inputstruktur
+######################################################################
+
+######################################################################
+#Falls die Flag -S gesetzt wurde, wird die ORCA-Inputstruktur fuer die
+#DLPNO-CCSDT-Rechnungen erstellt
+######################################################################
+			if [ $programm = orca ]; then
+echo "*" >> $file
+sed -i "1i* xyz $charge $multi" $file
+sed -i '1ipufferzeile' $file
+sed -i '1iend' $file
+sed -i "1i%pal nprocs=$prozessoren" $file
+sed -i "1i%MaxCore $hauptspeicher" $file
+sed -i '1ipufferzeile' $file
+sed -i "1i$route" $file
+	
+sed -i 's/pufferzeile//g' $file
+
+echo -e "\033[1;32mORCA\033[0m input file \033[1;32m${file/.xyz}_SP.inp\033[0m is created from \033[1;32m$file\033[0m."
+
+mv $file ${file/.xyz}_SP.inp
+
+					fi
+######################################################################
+#Ende des Erstellens der ORCA-Inputstruktur
+######################################################################
+
+if [ $ausfuehren = false ]; then
+	echo -e "\e[33mFile will not be submitted\033[0m"
+else 
+	if [ $programm = gaussian ]; then
+           gaussian16 $stunden:00:00
+	elif [ $programm = orca ]; then
+	   for file in *.inp; do orca $file $stunden:00:00; done
+	fi
+fi
+
+echo "################################################################"
