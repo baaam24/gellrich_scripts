@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# Default Parameter:
+# Default parameters:
 multi=1
 charge=0
-programm=gaussian
+program=gaussian
+prefix=""
 
 proz_g16=12
 proz_orc=6
@@ -55,23 +56,24 @@ do
 		route=$route_orc_sp
 	;;
 	g)#call of an gaussian calculation
+	program=gaussian
+	runtype=$OPTARG
 	;;
-	o)#call of an gaussian calculation
+	o)#call of an orca calculation
+	program=orca
+	runtype=$OPTARG
 	;;
 	h)
 		help_pfad=$(dirname $0)
 		vim "$help_pfad/help2_input.txt"  
 		exit
-		;;
+	;;
 	*)
 		echo -e "Usage of nonexistent flag.\033[31m Aborting.\033[0m"
 		exit
-		;;
+	;;
 	esac
 done
-
-################Leerzeile fuer schoenere Formatierung######
-echo ""
 
 #########################################################
 #Eingabe wird auf potentielle Fehler ueberprueft
@@ -153,6 +155,36 @@ if [ $(grep -c '[[:upper:]]' $file) -ne 0 ]; then
 
 	sed -i '1d;2d' $file
 fi 
+
+####################################################################
+#Prüfung welches Program und welche Art der Berechnung gewählt wurde
+#zuweisung spezifischer Parameter
+####################################################################
+
+
+case $program in 
+	gaussian )
+		echo "Gaussian calculation requested"
+		exit
+	;;
+	orca )
+		echo "ORCA calculation requested"
+		exit
+	;;
+	*
+		echo -e " Error: unknown program requested"
+		exit
+	;;
+esac
+
+
+
+
+
+
+
+
+
 
 ####################################################################
 #Falls nicht der Flag -S gesetzt wurde, wird die Datei in die Input-
