@@ -4,6 +4,7 @@
 multi=1
 charge=0
 program=gaussian
+runtype=o
 prefix=""
 
 proz_g16=12
@@ -275,4 +276,3 @@ case $program in
 		exit
 	;;
 esac
-
