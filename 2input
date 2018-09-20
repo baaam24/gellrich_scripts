@@ -19,6 +19,65 @@ route_orc_sp="! DLPNO-CCSD(T) def2-TZVP NoUseSym  def2-TZVP/C tightscf"
 route_orc_of="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF Opt Freq"
 route_orc_ts="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF OptTS Freq"
 
+block_orc_sp=" "
+block_orc_dft="%method \nGrid 4 \nFinalGrid 6 \nend "
+
+
+###### definition of functions
+
+function set_name {
+base_name=${file%%.*}
+base=$base_name$filetype
+in_file=echo "$prefix$base"
+
+}
+
+
+function gen_g16 {
+set_name
+
+echo "%chk=$base_name.chk" >> $in_file
+echo "%nprocshared=$proz_g16" >> $in_file
+echo "%mem=$mem_g16" >> $in_file
+echo " " >> $in_file
+echo "$route" >> $in_file
+echo " " >> $in_file
+echo " base_name generated with 2input " >> $in_file
+echo " " >> $in_file
+echo "$charge $multi" >> $in_file
+echo "$$coords " >> $in_file
+echo " " >> $in_file
+echo " " >> $in_file
+echo " " >> $in_file
+
+}
+
+
+function gen_orc {
+set_name
+
+echo "# base_name generated with 2input " >> $in_file
+echo " " >> $in_file
+echo "$route" >> $in_file
+echo " " >> $in_file
+echo "%MaxCore $mem_orc" >> $in_file
+echo "%pal nprocs=$proz_orc " >> $in_file
+echo "end " >> $in_file
+echo " " >> $in_file
+echo -e "$block" >> $in_file
+echo " " >> $in_file
+echo "* $charge $multi " >> $in_file
+echo "$coords" >> $in_file
+echo "*" >> $in_file
+echo " " >> $in_file
+
+}
+
+
+
+
+
+
 while getopts "f:stH:n:M:hSc:m:g:o:" OPTION
 do
 	case $OPTION in 
@@ -47,13 +106,11 @@ do
 	#compatibility stuff / shortcuts
 	t) # kept for compatibility
 		program=gaussian
-		route=$route_g16_of
+		runtype=o
 	;;
 	S)
-		programm=orca
-		prozessoren=$proz_orc
-		hauptspeicher=$mem_orc
-		route=$route_orc_sp
+		program=orca
+		runtype=s
 	;;
 	g)#call of an gaussian calculation
 	program=gaussian
@@ -93,7 +150,7 @@ if [ -z "$dateiendung" ]; then
 	exit
 fi
 
-if [ "$transition_state" = "true" ] && [ "$programm" = "orca" ]; then
+if [ "$transition_state" = "true" ] && [ "$program" = "orca" ]; then
 	echo -e "\033[31mTransition state with an ORCA single point calculation is not possible. Aborting.\033[0m"
 	echo "################################################################"
 	exit
@@ -111,7 +168,6 @@ if [ $dateiendung = ".out" ]; then
 	IDENTORCA=`echo "$FILEHEAD"| grep -c "        * O   R   C   A *"`
 	IDENTGAUSSIAN=`echo "$FILEHEAD"| grep -c " Entering Gaussian System, Link 0"`
 
-	PROGID=0
 	PROGNAME="none"
 
 	if [ "$IDENTORCA" = "0" ] & [ "$IDENTGAUSSIAN" = "1" ]
@@ -125,7 +181,7 @@ if [ $dateiendung = ".out" ]; then
 		echo "Charge and Multiplicity were adopted from $file and set to $charge and $multi."
 	
 		out2xyz $file
-		file=${file/.out}.xyz
+		coords=${file/.out}.xyz
 	fi 
 
 	if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
@@ -139,7 +195,7 @@ if [ $dateiendung = ".out" ]; then
 		echo "Charge and Multiplicity were adopted from $file and set to $charge and $multi."
 	
 		orc2xyz -f $file
-		file=${file/.out}.xyz
+		coords=${file/.out}.xyz
 	fi
 
 fi
@@ -151,7 +207,7 @@ fi
 #Avogadro loescht er die ersten beiden Zeilen
 ################################################################
 
-if [ $(grep -c '[[:upper:]]' $file) -ne 0 ]; then
+if [ $(grep -c '[[:upper:]]' $coords) -ne 0 ]; then
 
 	sed -i '1d;2d' $file
 fi 
@@ -163,13 +219,56 @@ fi
 
 
 case $program in 
-	gaussian )
-		echo "Gaussian calculation requested"
-		exit
+	gaussian)
+		echo "Gaussian input generation requested"
+		case $runtype in
+			o)
+				route=$route_g16_of
+			;;
+			t)
+				route=$route_g16_ts
+				prefix="TS_"
+			;;
+			c)
+				echo "custom runtype not implemented yet"
+				exit
+			;;
+			*)
+				echo "unknown runtype requested"
+				exit
+			;;
+		esac
+	filetype="dat"
+	gen_g16
 	;;
-	orca )
-		echo "ORCA calculation requested"
-		exit
+	orca)
+		echo "ORCA input generation requested"
+		case $runtype in
+			s)
+				route=$route_orc_sp
+				prefix="SP_"
+				block=$block_orc_sp
+			;;
+			o)
+				route=$route_orc_of
+				block=$block_orc_dft
+			;;
+			t)
+				route=$route_orc_ts
+				prefix="TS_"
+				block=$block_orc_dft
+			;;
+			c)
+				echo "custom runtype not implemented yet"
+				exit
+			;;
+			*)
+				echo "unknown runtype requested"
+				exit
+			;;
+		esac
+	filetype="inp"
+	gen_orc
 	;;
 	*)
 		echo -e " Error: unknown program requested"
@@ -177,108 +276,3 @@ case $program in
 	;;
 esac
 
-
-
-
-
-
-
-
-
-
-####################################################################
-#Falls nicht der Flag -S gesetzt wurde, wird die Datei in die Input-
-#Datei fuer die Gaussian Optimierungen umgewandelt
-####################################################################
-			if [ $programm = gaussian ]; then
-	
-sed -i "1i$charge $multi" $file
-sed -i '1ipufferzeile' $file
-sed -i "1i${file/.xyz}" $file
-sed -i '1ipufferzeile' $file
-sed -i "1i$route" $file
-sed -i "1i\%mem=${hauptspeicher}MB" $file
-sed -i "1i\%nprocshared=${prozessoren}" $file
-sed -i "1i\%chk=${file/.xyz}.chk" $file
-
-echo 'pufferzeile' >> $file
-echo 'pufferzeile' >> $file
-echo 'pufferzeile' >> $file
-echo 'pufferzeile' >> $file
-
-sed -i 's/pufferzeile//g' $file
-
-######################################################################
-#Wenn ein TS-Input erstellt und die Datei noch kein TS-Präfix besitzt,
-#benennt das Skript die Datei mit dem Praefix TS_ um
-######################################################################
-
-if [ "$transition_state" = "false" ]; then
-	mv $file ${file/.xyz}.dat
-	echo -e "\033[1;32mGaussian16\033[0m input file \033[1;32m${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
-else
-	ts_praefix=$(echo $file | grep -o 'TS_')
-	prep_suffix=$(echo $file | grep -o '_prep')
-
-	if [ "$ts_praefix" != "TS_" ] && [ "$prep_suffix" != "_prep" ]; then
-		mv $file TS_${file/.xyz}.dat
-		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
-	fi
-
-	if [ "$ts_praefix" = "TS_" ] && [ "$prep_suffix" != "_prep" ]; then
-		mv $file ${file/.xyz}.dat
-		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
-	fi
-
-	if [ "$ts_praefix" != "TS_" ] && [ "$prep_suffix" = "_prep" ]; then
-		mv $file TS_${file/_prep.xyz}.dat
-		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/_prep.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
-	fi
-
-	if [ "$ts_praefix" = "TS_" ] && [ "$prep_suffix" = "_prep" ]; then
-		mv $file ${file/_prep.xyz}.dat
-		echo -e "\033[1;32mTransition State Gaussian16\033[0m input file \033[1;32m ${file/_prep.xyz}.dat\033[0m is created from \033[1;32m$file\033[0m."
-	fi
-fi
-
-					fi
-######################################################################
-#Ende des Erstellens der Gaussian-Inputstruktur
-######################################################################
-
-######################################################################
-#Falls die Flag -S gesetzt wurde, wird die ORCA-Inputstruktur fuer die
-#DLPNO-CCSDT-Rechnungen erstellt
-######################################################################
-			if [ $programm = orca ]; then
-echo "*" >> $file
-sed -i "1i* xyz $charge $multi" $file
-sed -i '1ipufferzeile' $file
-sed -i '1iend' $file
-sed -i "1i%pal nprocs=$prozessoren" $file
-sed -i "1i%MaxCore $hauptspeicher" $file
-sed -i '1ipufferzeile' $file
-sed -i "1i$route" $file
-	
-sed -i 's/pufferzeile//g' $file
-
-echo -e "\033[1;32mORCA\033[0m input file \033[1;32m${file/.xyz}_SP.inp\033[0m is created from \033[1;32m$file\033[0m."
-
-mv $file ${file/.xyz}_SP.inp
-
-					fi
-######################################################################
-#Ende des Erstellens der ORCA-Inputstruktur
-######################################################################
-
-if [ $ausfuehren = false ]; then
-	echo -e "\e[33mFile will not be submitted\033[0m"
-else 
-	if [ $programm = gaussian ]; then
-           gaussian16 $stunden:00:00
-	elif [ $programm = orca ]; then
-	   for file in *.inp; do orca $file $stunden:00:00; done
-	fi
-fi
-
-echo "################################################################"
