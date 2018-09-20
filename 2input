@@ -29,7 +29,10 @@ block_orc_dft="%method \nGrid 4 \nFinalGrid 6 \nend "
 function set_name {
 base_name=${file%%.*}
 base=$base_name$filetype
-in_file=echo "$prefix$base"
+in_file=`echo "$prefix$base"`
+
+### note: check if the file is already present in current dirictory to prevent overwriting
+
 
 }
 
