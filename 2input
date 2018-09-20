@@ -19,7 +19,7 @@ route_orc_sp="! DLPNO-CCSD(T) def2-TZVP NoUseSym  def2-TZVP/C tightscf"
 route_orc_of="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF Opt Freq"
 route_orc_ts="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF OptTS Freq"
 
-while getopts "f:stH:n:M:hSc:m:go" OPTION
+while getopts "f:stH:n:M:hSc:m:g:o:" OPTION
 do
 	case $OPTION in 
 	# general Variables
