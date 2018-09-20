@@ -185,7 +185,7 @@ if [ $dateiendung = ".out" ]; then
 		echo "Charge and Multiplicity were adopted from $file and set to $charge and $multi."
 	
 		out2xyz $file
-		coords=${file/.out}.xyz
+		coords=`echo " ${file/.out}.xyz "`
 	fi 
 
 	if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
@@ -199,7 +199,7 @@ if [ $dateiendung = ".out" ]; then
 		echo "Charge and Multiplicity were adopted from $file and set to $charge and $multi."
 	
 		orc2xyz -f $file
-		coords=${file/.out}.xyz
+		coords=`echo " ${file/.out}.xyz "`
 	fi
 
 fi
