@@ -213,6 +213,8 @@ if [ $(grep -c '[[:upper:]]' $coords) -ne 0 ]; then
 	sed -i '1d;2d' $coords
 fi 
 
+
+echo -e "$coords"
 ####################################################################
 #Prüfung welches Program und welche Art der Berechnung gewählt wurde
 #zuweisung spezifischer Parameter
