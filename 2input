@@ -49,7 +49,7 @@ echo " " >> $in_file
 echo " $base_name generated with 2input " >> $in_file
 echo " " >> $in_file
 echo "$charge $multi" >> $in_file
-cat $coords  >> $in_file
+echo "$coords" >> $in_file
 echo " " >> $in_file
 echo " " >> $in_file
 echo " " >> $in_file
@@ -71,7 +71,7 @@ echo " " >> $in_file
 echo -e "$block" >> $in_file
 echo " " >> $in_file
 echo "* $charge $multi " >> $in_file
-cat $coords >> $in_file
+echo "$coords" >> $in_file
 echo "*" >> $in_file
 echo " " >> $in_file
 
@@ -184,7 +184,7 @@ if [ $dateiendung = ".out" ]; then
 		echo "Charge and Multiplicity were adopted from $file and set to $charge and $multi."
 	
 		out2xyz $file
-		coords=${file/.out}.xyz
+		coords=`cat ${file/.out}.xyz`
 	fi 
 
 	if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
@@ -197,7 +197,7 @@ if [ $dateiendung = ".out" ]; then
 		echo "Charge and Multiplicity were adopted from $file and set to $charge and $multi."
 	
 		orc2xyz -f $file
-		coords=${file/.out}.xyz
+		coords=`cat ${file/.out}.xyz`
 	fi
 
 fi
