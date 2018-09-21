@@ -30,7 +30,7 @@ NAtoms=`echo " $end - $begin - 1" | bc `
 NAtomsPlus=` echo "$NAtoms + 6" | bc ` 
 
 
-COORDS=`tac $FILE | grep  -m 1 -B $NAtomsPlus "FINAL ENERGY EVALUATION AT THE STATIONARY POINT" | tac | sed -e '1,6d' `
+COORDS=`tac $FILE | grep  -m 1 -B $NAtomsPlus "FINAL ENERGY EVALUATION AT THE STATIONARY POINT" | tac | sed -e '1,6d' | awk '{print $1 "      " $2 "      " $3  "      "$4}'`
 
 # echo "nur noch schreiben der txt datei"
 
