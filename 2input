@@ -210,7 +210,7 @@ fi
 ################################################################
 
 if [ $(grep -c '[[:upper:]]' $coords) -ne 0 ]; then
-	sed -i '1d;2d' $coords
+	coords=`sed -i '1d;2d' $coords`
 fi 
 
 
