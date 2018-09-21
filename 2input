@@ -210,11 +210,13 @@ fi
 ################################################################
 
 if [ $(grep -c '[[:upper:]]' $coords) -ne 0 ]; then
-	coords=`sed -i '1d;2d' $coords`
+	sed -i '1d;2d' $coords
+	echo "avogadro xyz detected"
 fi 
 
+echo $coords
 
-echo -e "$coords"
+
 ####################################################################
 #Prüfung welches Program und welche Art der Berechnung gewählt wurde
 #zuweisung spezifischer Parameter
