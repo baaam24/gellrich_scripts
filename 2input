@@ -184,7 +184,7 @@ if [ $dateiendung = ".out" ]; then
 		echo "Charge and Multiplicity were adopted from $file and set to $charge and $multi."
 	
 		out2xyz $file
-		coords=`cat ${file/.out}.xyz`
+		file=${file/.out}.xyz
 	fi 
 
 	if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
@@ -197,7 +197,7 @@ if [ $dateiendung = ".out" ]; then
 		echo "Charge and Multiplicity were adopted from $file and set to $charge and $multi."
 	
 		orc2xyz -f $file
-		coords=`cat ${file/.out}.xyz`
+		file=${file/.out}.xyz
 	fi
 
 fi
@@ -209,13 +209,14 @@ fi
 #Avogadro loescht er die ersten beiden Zeilen
 ################################################################
 
-if [ $(grep -c '[[:upper:]]' $coords) -ne 0 ]; then
-	sed -i '1d;2d' $coords
+
+if [ $(grep -c '[[:upper:]]' $file) -ne 0 ]; then
+	sed -i '1d;2d' $file
 	echo "avogadro xyz detected"
 fi 
 
-echo $coords
 
+coords=`cat $file`
 
 ####################################################################
 #Prüfung welches Program und welche Art der Berechnung gewählt wurde
