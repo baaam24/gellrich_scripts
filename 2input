@@ -70,7 +70,7 @@ echo "end " >> $in_file
 echo " " >> $in_file
 echo -e "$block" >> $in_file
 echo " " >> $in_file
-echo "* $charge $multi " >> $in_file
+echo "* xyz $charge $multi " >> $in_file
 echo "$coords" >> $in_file
 echo "*" >> $in_file
 echo " " >> $in_file
