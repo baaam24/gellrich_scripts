@@ -7,8 +7,8 @@ program=gaussian
 runtype=o
 prefix=""
 
-proz_g16=12
-proz_orc=6
+proc_g16=12
+proc_orc=6
 
 mem_g16=10000
 mem_orc=4000
@@ -22,6 +22,9 @@ route_orc_ts="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF OptTS Freq"
 
 block_orc_sp=" "
 block_orc_dft="%method \n\tGrid 4 \n\tFinalGrid 6 \nend "
+
+comment="$base_name generated with 2input."
+add_comment=""
 
 
 ###### definition of functions
@@ -48,12 +51,12 @@ function gen_g16 {
 set_name
 
 echo "%chk=$base_name.chk" >> $in_file
-echo "%nprocshared=$proz_g16" >> $in_file
-echo "%mem=$mem_g16" >> $in_file
+echo "%nprocshared=$proc" >> $in_file
+echo "%Mem=$mem " >> $in_file
 echo " " >> $in_file
 echo "$route" >> $in_file
 echo " " >> $in_file
-echo " $base_name generated with 2input " >> $in_file
+echo " $comment . $add_comment " >> $in_file
 echo " " >> $in_file
 echo "$charge $multi" >> $in_file
 echo "$coords" >> $in_file
@@ -67,12 +70,12 @@ echo " " >> $in_file
 function gen_orc {
 set_name
 
-echo "# $base_name generated with 2input " >> $in_file
+echo "# $comment . $add_comment" >> $in_file
 echo " " >> $in_file
 echo "$route" >> $in_file
 echo " " >> $in_file
-echo "%MaxCore $mem_orc" >> $in_file
-echo "%pal nprocs=$proz_orc " >> $in_file
+echo "%MaxCore $mem" >> $in_file
+echo "%pal nprocs=$proc " >> $in_file
 echo "end " >> $in_file
 echo " " >> $in_file
 echo -e "$block" >> $in_file
@@ -89,7 +92,7 @@ echo " " >> $in_file
 
 
 
-while getopts "f:stH:n:M:hSc:m:g:o:" OPTION
+while getopts "f:stH:n:M:hSc:m:g:o:p:" OPTION
 do
 	case $OPTION in 
 	# general Variables
@@ -103,10 +106,12 @@ do
 		file=$OPTARG
 	;;
 	n)
-		prozessoren=$OPTARG
+		proc_g16=$OPTARG
+		proc_orc=$OPTARG
 	;;
 	M)
-		hauptspeicher=$OPTARG
+		mem_g16=$OPTARG
+		mem_g16=$OPTARG
 	;;
 	H)
 		stunden=$OPTARG
@@ -117,19 +122,23 @@ do
 	#compatibility stuff / shortcuts
 	t) # kept for compatibility
 		program=gaussian
-		runtype=o
+		runtype=t
 	;;
 	S)
 		program=orca
 		runtype=s
 	;;
 	g)#call of an gaussian calculation
-	program=gaussian
-	runtype=$OPTARG
+		program=gaussian
+		runtype=$OPTARG
 	;;
 	o)#call of an orca calculation
-	program=orca
-	runtype=$OPTARG
+		program=orca
+		runtype=$OPTARG
+	;;
+	p) #input generation using a predifined template
+		pattern_filename=$OPTARG
+		program=template
 	;;
 	h)
 		help_pfad=$(dirname $0)
@@ -242,16 +251,14 @@ case $program in
 				route=$route_g16_ts
 				prefix="TS_"
 			;;
-			c)
-				echo "custom runtype not implemented yet"
-				exit
-			;;
 			*)
 				echo "unknown runtype requested"
 				exit
 			;;
 		esac
 	filetype="dat"
+	mem=$mem_g16
+	proc=$proc_g16
 	gen_g16
 	;;
 	orca)
@@ -271,17 +278,23 @@ case $program in
 				prefix="TS_"
 				block=$block_orc_dft
 			;;
-			c)
-				echo "custom runtype not implemented yet"
-				exit
-			;;
 			*)
 				echo "unknown runtype requested"
 				exit
 			;;
 		esac
 	filetype="inp"
+	mem=$mem_orc
+	proc=$proc_orc
 	gen_orc
+	;;
+	template)
+	pattern_folder=$(dirname $0)
+	pattern_path=`echo "$pattern_folder/custom_2input/$pattern_filename"`
+	
+	echo "template based input-generation requested"
+	source $pattern_path
+	exit
 	;;
 	*)
 		echo -e " Error: unknown program requested"
