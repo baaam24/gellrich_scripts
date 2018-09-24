@@ -7,20 +7,18 @@
 
 #program=gaussian
 # or 
-#program=orca
+program=orca
 
+route="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF Opt Freq"
+filetype="inp"
+block="%method \n\tGrid 4 \n\tFinalGrid 6 \nend \n "
+proc=6
+mem=4000
 
 
 ### OPTIONAL
 
 #multi=1
 #charge=0
-#prefix=""
-#route=""
-#filetype="dat"
-#block=""
-#proc=6
-#mem=2000
-#add_comment=""
-
-
+prefix=""
+add_comment="comment"
