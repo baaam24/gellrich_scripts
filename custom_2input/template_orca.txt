@@ -1,37 +1,37 @@
+# Template for custom ORCA - jobs
+
 # This is an example file for the creation of input templates.
 # every line starting with an '#' will not be read.
 # To allow for easy reading all variables start with "var_"
 # Necessary for this is the definition of the following two variables:
 
-
 #Route / input line:
-var_route="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF Opt Freq"
+var_route="#  PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF Opt Freq"
 
-Additional Comment line to descibe your job:
-var_coment=""
+#Additional Comment line to descibe your job:
+var_comment=""
 
-# All other varibles can be controlled also:
-
-
-Prefix
-memory
-nprocs
-charge 
-multipl
-inp_block
+# All other varibles can be controlled/overwritten also:
 
 
-
-# Dies ist ein Test dokument:
-#alle zeilen mit einem "#" sollten verschwinden
-
-variable: ab hier will ich einelesen
-
-# das sollte auch verschwinden
-
-line: # dies ist eine test route 
-
-mem: 5000
+#Prefix:
+var_Prefix=""
 
 
-diese und 3 andere linses willst du sehen
+#memory:
+var_mem="4000"
+#var_mem="2000"
+
+#nprocs
+var_proz_orc="6"
+#var_proz_g16="12"
+ 
+#charge:
+var_charge="0"
+
+
+#multipl
+var_multi="1"
+
+#inp_block:
+var_block="%method \n\tGrid 4 \n\tFinalGrid 6 \nend "
