@@ -289,12 +289,23 @@ case $program in
 	gen_orc
 	;;
 	template)
-	pattern_folder=$(dirname $0)
-	pattern_path=`echo "$pattern_folder/custom_2input/$pattern_filename"`
+		pattern_folder=$(dirname $0)
+		pattern_path=`echo "$pattern_folder/custom_2input/$pattern_filename"`
 	
-	echo "template based input-generation requested"
-	source $pattern_path
-	exit
+		echo "template based input-generation requested"
+		source $pattern_path
+		case $program in
+			gaussian)
+			gen_g16
+			;;
+			orca)
+			gen_orc
+			;;
+			*)
+			echo "custom templated has no program specified !"
+			exit
+			;;
+		esac
 	;;
 	*)
 		echo -e " Error: unknown program requested"

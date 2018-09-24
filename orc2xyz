@@ -17,17 +17,17 @@ done
 
 # echo "now starting"
 
-grep "| " $FILE | grep -m 2 "*" | sed -e 's/>//g' > tmp.txt
+#grep "| " $FILE | grep -m 2 "*" | sed -e 's/>//g' > tmp.txt
 
 # echo "positions for NAtom calc. found"
 
-begin=`head -1 tmp.txt | awk '{print $2}' `
-end=`tail -1 tmp.txt | awk '{print $2}'`
+#begin=`head -1 tmp.txt | awk '{print $2}' `
+#end=`tail -1 tmp.txt | awk '{print $2}'`
 
 # echo "numers extracted"
 
-NAtoms=`echo " $end - $begin - 1" | bc `
-NAtomsPlus=` echo "$NAtoms + 6" | bc ` 
+NAtoms=`grep -m 1 "Number of atoms" $FILE | awk '{print $5}'`
+NAtomsPlus=` echo "$NAtoms + 5" | bc ` 
 
 
 COORDS=`tac $FILE | grep  -m 1 -B $NAtomsPlus "FINAL ENERGY EVALUATION AT THE STATIONARY POINT" | tac | sed -e '1,6d' | awk '{print $1 "      " $2 "      " $3  "      "$4}'`
@@ -41,4 +41,4 @@ echo -e " " >> $NEWFILE.xyz
 echo -e "$COORDS" >> $NEWFILE.xyz
 
 
-rm tmp.txt
+#rm tmp.txt
