@@ -21,7 +21,7 @@ route_orc_of="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF Opt Freq"
 route_orc_ts="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF OptTS Freq"
 
 block_orc_sp=" "
-block_orc_dft="%method \nGrid 4 \nFinalGrid 6 \nend "
+block_orc_dft="%method \n\tGrid 4 \n\tFinalGrid 6 \nend "
 
 
 ###### definition of functions
@@ -32,6 +32,13 @@ base=$base_name.$filetype
 in_file=`echo "$prefix$base"`
 
 ### note: check if the file is already present in current dirictory to prevent overwriting
+
+if [ -e $in_file ]
+then
+	echo "Input file already exist. Script stopped to prevent overwriting"
+	echo "Please check yout current dirictory and try again"
+	exit
+fi
 
 
 }
