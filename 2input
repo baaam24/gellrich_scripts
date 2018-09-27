@@ -10,7 +10,7 @@ prefix=""
 proc_g16=12
 proc_orc=6
 
-mem_g16=10000
+mem_g16="10000MB"
 mem_orc=4000
 
 route_g16_of="# pbe1pbe/def2SVP opt freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3bj"
