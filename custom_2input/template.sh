@@ -20,5 +20,6 @@ mem=4000
 
 #multi=1
 #charge=0
-prefix=""
-add_comment="comment"
+#suffix=""
+#prefix=""
+#add_comment="comment"

@@ -6,6 +6,7 @@ charge=0
 program=gaussian
 runtype=o
 prefix=""
+suffix=""
 
 proc_g16=12
 proc_orc=6
@@ -32,7 +33,7 @@ add_comment=""
 function set_name {
 base_name=${file%%.*}
 base=$base_name.$filetype
-in_file=`echo "$prefix$base"`
+in_file=`echo "$prefix$base$suffix"`
 
 ### note: check if the file is already present in current dirictory to prevent overwriting
 

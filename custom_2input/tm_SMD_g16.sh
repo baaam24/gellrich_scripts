@@ -11,13 +11,14 @@
 program=gaussian
 route="# pbe1pbe/def2SVP empiricaldispersion=gd3bj SCRF=(SMD,Solvent=Benzene) scf=tight int(grid=ultrafine) maxdisk=100gb  "
 filetype="dat"
-proc=6
-mem=10000
+proc=12
+mem=25000
 
 
 ### OPTIONAL
 
 #multi=1
 #charge=0
-#prefix=""
+#prefix="SMD_"
+suffix="_SMD"
 add_comment="SMD single point calculation"
