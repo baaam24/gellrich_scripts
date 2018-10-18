@@ -32,8 +32,8 @@ add_comment=""
 
 function set_name {
 base_name=${file%%.*}
-base=$base_name.$filetype
-in_file=`echo "$prefix$base$suffix"`
+base=$base_name
+in_file=`echo "$prefix$base$suffix.$filetype"`
 
 ### note: check if the file is already present in current dirictory to prevent overwriting
 
