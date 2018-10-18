@@ -12,7 +12,7 @@ program=gaussian
 route="# pbe1pbe/def2SVP empiricaldispersion=gd3bj SCRF=(SMD,Solvent=Benzene) scf=tight int(grid=ultrafine) maxdisk=100gb  "
 filetype="dat"
 proc=12
-mem=25000
+mem=20000mb
 
 
 ### OPTIONAL
