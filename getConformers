@@ -1,0 +1,92 @@
+#!/bin/bash
+#
+# conformer search using OpenBabel
+# Syntax: getConformers [FILE]
+#
+#
+
+#### initial geometry
+FILE=$1
+NAME=$(echo $FILE | cut -f1 -d'.')
+
+#### number of possible conformers
+TEMPFILE=temporary-file.xyz
+numconf=$(obabel $FILE -O $TEMPFILE --conformer | grep "Initial conformer count:" | awk '{print $NF}')
+rm $TEMPFILE
+
+#### weighted rotor search + conjugate gradient optimization
+WRS="$NAME"_WRS_CG.xyz
+obconformer $numconf 1000 $FILE > $WRS
+
+CHECKLINE=1
+unset PRINTERROR
+
+while [[ $CHECKLINE -gt 0 ]]; do
+        CHECKVAR=$(sed -n "$CHECKLINE"p $WRS)
+        CHECKNUMCOL=$(echo "$CHECKVAR" | awk '{print NF}')
+        CHECKCHAR=$(echo "$CHECKVAR" | awk '{print $1}')
+
+	if [ "$CHECKNUMCOL" -eq 1 ] && [[ "$CHECKCHAR" =~ ^[0-9]+$ ]]; then
+	        CHECKLINE=-1
+	else
+		PRINTERROR=$(echo $PRINTERROR $CHECKVAR)
+		sed -i 1d $WRS
+	fi
+done
+
+#### generate remaining conformers (MMFF94)
+obabel $WRS -O "$NAME"_conformers.xyz --conformer --nconf $numconf --score rmsd --writeconformers
+
+count=$(grep -c "$WRS" "$NAME"_conformers.xyz)
+start=1
+end=$(head -1 "$NAME"_conformers.xyz); end=$((end+2))
+add=$end
+
+#### assign energies (MMFF94)
+
+for (( i=1 ; i <= $count ; i++ ))
+do
+	sed -n "$start","$end"p "$NAME"_conformers.xyz > temp"$i".xyz
+	energy=$(obenergy -ff mmff94 temp"$i".xyz | grep "TOTAL ENERGY" | awk '{print $4}')
+	sed -i "/$WRS/s/$/ $energy/" temp"$i".xyz
+	start=$((start+add))
+	end=$((end+add))
+done
+
+for (( i=1 ; i <= $count ; i++ ))
+do
+	en[$i]=$(grep "$WRS" temp"$i".xyz | awk '{print $NF}'); echo $i ${en[$i]} >> "$NAME"-order-values
+done
+						
+sed -i "s/$WRS/9999999/g" "$NAME"-order-values
+cat "$NAME"-order-values | sort -n -k2 > "$NAME"-ordered-values; rm "$NAME"-order-values
+mkdir "$NAME"-conformers-MMFF94
+
+echo -e "conf\tenergy (MMFF94, kcal/mol)" > "$NAME"-list-conformers.txt
+for (( i=1 ; i <= $count ; i++ ))
+do
+	old=$(sed -n "$i"p "$NAME"-ordered-values | awk '{print $1}')
+	mv temp"$old".xyz "$NAME"_conf"$i".xyz
+								
+	energy=$(grep "$WRS" "$NAME"_conf"$i".xyz | awk '{print $NF}')
+	echo -e "$i\t$energy" >> "$NAME"-list-conformers.txt
+
+	if [ $i -ne 1 ]; then
+		cat "$NAME"_conf"$i".xyz >> "$NAME"_conformers.xyz
+	else
+		cat "$NAME"_conf"$i".xyz > "$NAME"_conformers.xyz
+	fi
+																					
+	sed -i 1,2d "$NAME"_conf"$i".xyz
+	cp "$NAME"_conf"$i".xyz "$NAME"-conformers-MMFF94; rm "$NAME"_conf"$i".xyz
+done
+
+cp $WRS "$NAME"-conformers-MMFF94; rm $WRS "$NAME"-ordered-values
+cat "$NAME"-list-conformers.txt
+																					 
+###### OUTPUT
+
+echo "$count conformer(s) of $FILE were generated."
+echo "Find all conformers in "$NAME"-conformers-MMFF94 and a list in "$NAME"-list-conformers.txt."
+echo "Global energy minimum: "$NAME"_conf1.xyz"
+if ! [ -z "$PRINTERROR" ]; then echo "Caution $WRS : $PRINTERROR"; fi
