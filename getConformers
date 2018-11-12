@@ -41,6 +41,10 @@ done
 #### generate remaining conformers
 obabel $WRS -O "$NAME"_conformers.xyz --conformer --nconf $numconf --score rmsd --writeconformers
 
+prepend=$(cat $WRS)
+echo "$prepend" | cat - "$NAME"_conformers.xyz > TEMP && mv TEMP "$NAME"_conformers.xyz
+sed -i "2s/.*/$WRS/" "$NAME"_conformers.xyz
+
 count=$(grep -c "$WRS" "$NAME"_conformers.xyz)
 start=1
 end=$(head -1 "$NAME"_conformers.xyz); end=$((end+2))
