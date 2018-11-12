@@ -38,7 +38,7 @@ while [[ $CHECKLINE -gt 0 ]]; do
 	fi
 done
 
-#### generate remaining conformers (MMFF94)
+#### generate remaining conformers
 obabel $WRS -O "$NAME"_conformers.xyz --conformer --nconf $numconf --score rmsd --writeconformers
 
 count=$(grep -c "$WRS" "$NAME"_conformers.xyz)
@@ -46,12 +46,22 @@ start=1
 end=$(head -1 "$NAME"_conformers.xyz); end=$((end+2))
 add=$end
 
-#### assign energies (MMFF94)
+#### assign energies (default: MMFF94; if B is present: UFF)
+
+FORCEFIELD=MMFF94
+checkatoms=$(cat $FILE | awk '{print $1}' | sort -d -u)
+numcheck=$(echo "$checkatoms" | wc -l)
+for (( i=1 ; i <= $numcheck ; i++))
+do
+	check=$(echo "$checkatoms" | sed -n "$i"p)
+	if [ "$check" = B ]; then FORCEFIELD=UFF; fi
+done
 
 for (( i=1 ; i <= $count ; i++ ))
 do
 	sed -n "$start","$end"p "$NAME"_conformers.xyz > temp"$i".xyz
-	energy=$(obenergy -ff mmff94 temp"$i".xyz | grep "TOTAL ENERGY" | awk '{print $4}')
+	energy=$(obenergy -ff $FORCEFIELD temp"$i".xyz | grep "TOTAL ENERGY" | awk '{print $4}')
+	if [ "$FORCEFIELD" = UFF ]; then energy=$(echo "($energy)/4.184" | bc -l | xargs printf "%.*f\n" 2); fi
 	sed -i "/$WRS/s/$/ $energy/" temp"$i".xyz
 	start=$((start+add))
 	end=$((end+add))
@@ -64,9 +74,9 @@ done
 						
 sed -i "s/$WRS/9999999/g" "$NAME"-order-values
 cat "$NAME"-order-values | sort -n -k2 > "$NAME"-ordered-values; rm "$NAME"-order-values
-mkdir "$NAME"-conformers-MMFF94
+mkdir "$NAME"-conformers-"$FORCEFIELD"
 
-echo -e "conf\tenergy (MMFF94, kcal/mol)" > "$NAME"-list-conformers.txt
+echo -e "conf\tenergy ("$FORCEFIELD", kcal/mol)" > "$NAME"-list-conformers.txt
 for (( i=1 ; i <= $count ; i++ ))
 do
 	old=$(sed -n "$i"p "$NAME"-ordered-values | awk '{print $1}')
@@ -82,15 +92,15 @@ do
 	fi
 																					
 	sed -i 1,2d "$NAME"_conf"$i".xyz
-	cp "$NAME"_conf"$i".xyz "$NAME"-conformers-MMFF94; rm "$NAME"_conf"$i".xyz
+	cp "$NAME"_conf"$i".xyz "$NAME"-conformers-"$FORCEFIELD"; rm "$NAME"_conf"$i".xyz
 done
 
-cp $WRS "$NAME"-conformers-MMFF94; rm $WRS "$NAME"-ordered-values $FILE
+cp $WRS "$NAME"-conformers-"$FORCEFIELD"; rm $WRS "$NAME"-ordered-values $FILE
 cat "$NAME"-list-conformers.txt
 																					 
 ###### OUTPUT
 
 echo "$count conformer(s) of $FILE were generated."
-echo "Find all conformers in "$NAME"-conformers-MMFF94 and a list in "$NAME"-list-conformers.txt."
+echo "Find all conformers in "$NAME"-conformers-"$FORCEFIELD" and a list in "$NAME"-list-conformers.txt."
 echo "Global energy minimum: "$NAME"_conf1.xyz"
 if ! [ -z "$PRINTERROR" ]; then echo "Caution $WRS : $PRINTERROR"; fi
