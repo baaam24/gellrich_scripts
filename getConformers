@@ -8,9 +8,13 @@
 #### initial geometry
 FILE=$1
 NAME=$(echo $FILE | cut -f1 -d'.')
+head -1 $FILE > new-"$NAME"-file.xyz
+echo "" >> new-"$NAME"-file.xyz
+sed -n 3,"$"p $FILE >> new-"$NAME"-file.xyz
+FILE=new-"$NAME"-file.xyz
 
 #### number of possible conformers
-TEMPFILE=temporary-file.xyz
+TEMPFILE=temporary-"$NAME"-file.xyz
 numconf=$(obabel $FILE -O $TEMPFILE --conformer | grep "Initial conformer count:" | awk '{print $NF}')
 rm $TEMPFILE
 
@@ -81,7 +85,7 @@ do
 	cp "$NAME"_conf"$i".xyz "$NAME"-conformers-MMFF94; rm "$NAME"_conf"$i".xyz
 done
 
-cp $WRS "$NAME"-conformers-MMFF94; rm $WRS "$NAME"-ordered-values
+cp $WRS "$NAME"-conformers-MMFF94; rm $WRS "$NAME"-ordered-values $FILE
 cat "$NAME"-list-conformers.txt
 																					 
 ###### OUTPUT
