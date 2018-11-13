@@ -1,0 +1,93 @@
+#!/bin/bash
+#
+# computation of free solvation energy based on present output-file
+# SMD-PBE0/def2-SVP in benzene
+#
+
+function comp_solv {
+NAME=$(echo ${LISTARR[$fi]} | cut -f2 -d'/' | cut -f1 -d'.')
+out2xyz ${LISTARR[$fi]}
+INPUT=$(echo $NAME'_'SMD'_'$SOLVENT.dat)
+
+#########################################
+cat > $INPUT <<!
+%chk=$NAME-$SOLVENT.chk
+%NProcShared=12
+%mem=10000mb
+#p PBE1PBE/Def2SVP SP SCF=Tight Int(Grid=Ultrafine) MaxDisk=100gb
+
+ SPE computation for Gsolv computation
+
+!
+#########################################
+
+CHARGE=$(grep -m1 Multiplicity ${LISTARR[$fi]} | head -1 | awk '{print $3}')
+MULT=$(grep -m1 Multiplicity ${LISTARR[$fi]} | head -1 | awk '{print $6}')
+NATOMS=$(grep -m1 NAtoms ${LISTARR[$fi]} | awk '{print $2}')
+
+echo "$CHARGE $MULT" >> $INPUT
+
+tail -"$NATOMS" $NAME.xyz >> $INPUT
+
+#########################################
+cat >> $INPUT <<!
+
+--Link1--
+
+%chk=$NAME-$SOLVENT.chk
+%NProcShared=12
+%mem=10000mb
+#p PBE1PBE/Def2SVP SP Geom=AllCheck Guess=Read SCF=Tight Int(Grid=Ultrafine) MaxDisk=100gb SCRF=(SMD,Solvent=$SOLVENT)
+
+
+!
+#########################################
+
+rm $NAME.xyz
+}
+
+function calc_solv {
+unset SOLVENT ENERGYGAS ENERGYSOLV Gsolv Gsolv_au
+#SSCORR=$(echo "(8.3144622*298.15*3.80879881*0.0000001)*(l(8.3144622*(1000/101325)*298.15))" | bc -l)
+SSCORR=.00301880430536378077
+SOLVENT=$(grep -A30 "Polarizable Continuum Model" $FILE | grep -m1 Solvent | awk '{print $3}' | cut -d',' -f1)
+ENERGYGAS=$(cat $FILE | grep -m1 "SCF Done:" | awk '{print $5}')
+ENERGYSOLV=$(tac $FILE | grep -m1 "SCF Done:" | awk '{print $5}')
+Gsolv_au=$(echo $ENERGYSOLV-$ENERGYGAS+$SSCORR | sed 's/--/+/g' | bc -l)
+Gsolv=$(echo $Gsolv_au*627.5095 | bc -l | xargs printf "%.*f\n" 1)
+}
+
+LIST=`find . -maxdepth 1 ! -name 'slurm*.out' -name '*.out' -type f`
+LISTARR=($LIST)
+
+while getopts "s:c" OPTION; do
+	case $OPTION in
+	s)
+		SOLVENT=$OPTARG
+		echo "Apply SMD model for $SOLVENT"
+		for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
+		do
+			comp_solv
+		done
+	;;
+	c)
+		for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
+		do
+			unset numPCM numSCF
+			numPCM=$(grep -c "Polarizable Continuum Model" ${LISTARR[$fi]})
+			numSCF=$(grep -c "SCF Done:" ${LISTARR[$fi]})
+			if [ "$numPCM" = "1" ] & [ "$numSCF" = "2" ]
+			then
+				FILE=${LISTARR[$fi]}
+				CHKFILE=$(grep -m1 "checkpoint file" $FILE | awk '{print $6}' | cut -d'"' -f2)
+				if [ -f "$CHKFILE" ]; then rm $CHKFILE; fi
+				calc_solv
+				echo "free solvation energy including standard state correction ($SOLVENT, T = 298.15 K)"
+				echo "$Gsolv kcal/mol [ $Gsolv_au a.u. ]"
+			fi
+		done
+	;;
+	esac
+done
+
+
