@@ -48,7 +48,7 @@ do
 			prozessoren=6
 		fi
 		
-		hauptspeicher=5000
+		hauptspeicher=4000
 			
 		programm=orca
 		route="! DLPNO-CCSD(T) NoUseSym def2-TZVP def2-TZVP/C tightscf"
@@ -173,7 +173,7 @@ echo 'pufferzeile' >> $file
 sed -i 's/pufferzeile//g' $file
 
 ######################################################################
-#Wenn ein TS-Input erstellt und die Datei noch kein TS-Pr‰fix besitzt,
+#Wenn ein TS-Input erstellt und die Datei noch kein TS-Pr√§fix besitzt,
 #benennt das Skript die Datei mit dem Praefix TS_ um
 ######################################################################
 
