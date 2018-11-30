@@ -1,0 +1,84 @@
+#!/bin/bash
+#
+# getInput -i [OUT/XYZ File] -o [template-File] {-d [Directory (Default=Current)] -n [Name] -a 'APPENDIX'}
+#
+
+function prepXYZ {
+#input: $FILE
+#output: $COORDS [raw coordinates]
+
+unset COORDS NEWFILE SUFFIX
+SUFFIX=$(echo $FILE | rev | cut -f1 -d'.' | rev)
+case $SUFFIX in 
+	xyz)
+			COORDS=$(cat $FILE)
+	;;
+	out)	out2xyz $FILE
+			NEWFILE=$(echo $FILE | sed 's/.out/.xyz/')
+			COORDS=$(cat $NEWFILE); rm $NEWFILE
+	;;
+	\?) echo "Invalid format."
+	;;
+esac
+
+CHECKSTART=$(echo "$COORDS" | head -1 | awk '{print NF}')
+while [[ $CHECKSTART -ne 4 ]]; do
+	COORDS=$(echo "$COORDS" | sed 1d)
+	CHECKSTART=$(echo "$COORDS" | head -1 | awk '{print NF}')
+done
+
+CHECKEND=$(echo "$COORDS" | tail -1 | awk '{print NF}')
+while [[ $CHECKEND -ne 4 ]]; do
+	COORDS=$(echo "$COORDS" | sed "$"d)
+	CHECKEND=$(echo "$COORDS" | tail -1 | awk '{print NF}')
+done
+
+}
+
+unset INPUTFILE OUTPUTFILE APPENDIX NAME
+TEMPLATEDIR=~/inputs/
+WORKDIR=.
+while getopts ":hi:o:a:n:d:" OPTION; do
+	case $OPTION in
+		h) echo "Help-File does not exist yet."; exit
+		;;
+		i) INPUTFILE=$OPTARG
+			if [ ! -f "$INPUTFILE" ]; then
+				echo "Error: $INPUTFILE does not exist."
+				exit
+			fi
+		;;
+		o) OUTPUTFILE=$OPTARG
+			if [ ! -f "$OUTPUTFILE" ]; then
+				CURRDIR=$(pwd);	cd $TEMPLATEDIR; TEMPLATEDIR=$(pwd); cd $CURRDIR
+				NEWOUTPUTFILE=$TEMPLATEDIR/$OUTPUTFILE
+				if [ ! -f "$NEWOUTPUTFILE" ]; then
+					echo "Error: $OUTPUTFILE does not exist."
+					exit
+				else
+					OUTPUTFILE=$NEWOUTPUTFILE
+				fi
+			fi
+		;;
+		a) APPENDIX=$OPTARG
+		;;
+		n) NAME=$OPTARG
+		;;
+		d) WORKDIR=$OPTARG
+			if [ ! -d "$WORKDIR" ]; then mkdir $WORKDIR; fi
+		;;
+	esac
+done
+
+if [ -z "$NAME" ]; then
+	NAME=$(echo $INPUTFILE | rev | cut -f1 -d'/' | rev | cut -f1 -d'.')
+	SUFFIX=$(echo $OUTPUTFILE | rev | cut -f1 -d'.' | rev)
+	NAME=$(echo $NAME.$SUFFIX)
+fi
+
+FILE=$INPUTFILE; prepXYZ
+if [ ! -f $WORKDIR/$NAME ]; then cp $OUTPUTFILE $WORKDIR/$NAME; else echo "Error: $WORKDIR/$NAME already exists."; exit; fi
+echo -e "$COORDS\n" >> $WORKDIR/$NAME
+echo -e "$APPENDIX\n" >> $WORKDIR/$NAME
+
+
