@@ -1,0 +1,13 @@
+This is the help file for >>getConformers<<
+
+Syntax: getConformers <FILE>
+searches for conformers using OpenBabel
+OpenBabel must be installed to run following commands: obconformer obabel obenergy
+<FILE> must be an XYZ-file in XMOL-format (e.g. force field optimization using Avogadro)
+Caution: This script produces a lot(!) of text, which cannot be suppressed.
+
+Procedure:
+1)	Weighted Rotor Search including a conjugate gradient optimization
+2)	generation of remaining conformers/rotamers
+3)	assign MMFF94 energies (UFF if boron is present)
+
