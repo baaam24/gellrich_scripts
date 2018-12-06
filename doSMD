@@ -1,13 +1,44 @@
 #!/bin/bash
 #
-# computation of free solvation energy based on present output-file
-# SMD-PBE0/def2-SVP in benzene
+# computation/calculation of free energy of solvation at SMD-PBE0/def2-SVP
 #
 
-function comp_solv {
-NAME=$(echo ${LISTARR[$fi]} | cut -f2 -d'/' | cut -f1 -d'.')
-out2xyz ${LISTARR[$fi]}
+function ident_prog { # identify the programm (gaussian, orca, ...) that created this OUT file
+#orca:
+FILEHEAD=`head -3 ${LISTARR[$fi]} `
+IDENTORCA=`echo "$FILEHEAD"| grep -c "        * O   R   C   A *"`
+IDENTGAUSSIAN=`echo "$FILEHEAD"| grep -c " Entering Gaussian System, Link 0"`
+
+unset PROGNAME
+
+if [ "$IDENTORCA" = "0" ] & [ "$IDENTGAUSSIAN" = "1" ]
+	then
+	PROGNAME="Gaussian"
+fi 
+
+if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
+	then
+	PROGNAME="ORCA"
+fi
+}
+
+function find_NTerm {
+unset NTERM
+case $PROGNAME in 
+	Gaussian) NTERM=`grep -c "Normal termination of Gaussian" ${LISTARR[$fi]}`
+	;;
+	ORCA) NTERM=`grep -c "ORCA TERMINATED NORMALLY" ${LISTARR[$fi]}`
+	;;
+esac
+}
+
+function comp_solv { #prepare Input-File for SMD-computation
+NAME=$(echo ${LISTARR[$fi]} | rev | cut -f2-100 -d'.' | cut -f1 -d'/' | rev)
 INPUT=$(echo $NAME'_'SMD'_'$SOLVENT.dat)
+
+if [ ! -f $INPUT ]; then
+out2xyz ${LISTARR[$fi]}
+XYZFILE=$(echo ${LISTARR[$fi]} | sed 's/.out/.xyz/')
 
 #########################################
 cat > $INPUT <<!
@@ -27,7 +58,7 @@ NATOMS=$(grep -m1 NAtoms ${LISTARR[$fi]} | awk '{print $2}')
 
 echo "$CHARGE $MULT" >> $INPUT
 
-tail -"$NATOMS" $NAME.xyz >> $INPUT
+tail -"$NATOMS" $XYZFILE >> $INPUT
 
 #########################################
 cat >> $INPUT <<!
@@ -43,51 +74,86 @@ cat >> $INPUT <<!
 !
 #########################################
 
-rm $NAME.xyz
+rm $XYZFILE
+
+else
+
+echo "$INPUT already exists."; exit
+fi
 }
 
-function calc_solv {
-unset SOLVENT ENERGYGAS ENERGYSOLV Gsolv Gsolv_au
-#SSCORR=$(echo "(8.3144622*298.15*3.80879881*0.0000001)*(l(8.3144622*(1000/101325)*298.15))" | bc -l)
-SSCORR=.00301880430536378077
-SOLVENT=$(grep -A30 "Polarizable Continuum Model" $FILE | grep -m1 Solvent | awk '{print $3}' | cut -d',' -f1)
-ENERGYGAS=$(cat $FILE | grep -m1 "SCF Done:" | awk '{print $5}')
-ENERGYSOLV=$(tac $FILE | grep -m1 "SCF Done:" | awk '{print $5}')
-Gsolv_au=$(echo $ENERGYSOLV-$ENERGYGAS+$SSCORR | sed 's/--/+/g' | bc -l)
-Gsolv=$(echo $Gsolv_au*627.5095 | bc -l | xargs printf "%.*f\n" 1)
+function calc_solv { #calculate G_solv including standard state correction (c = 1 mol/L, T = 298.15 K)
+unset SOLVENT ENERGYGAS ENERGYSOLV Gsolv Gsolv_au numPCM numSCF CHKFILE CHKPATH
+
+ident_prog
+find_NTerm
+numPCM=$(grep -c "Polarizable Continuum Model" ${LISTARR[$fi]})
+numSCF=$(grep -c "SCF Done:" ${LISTARR[$fi]})
+	
+### bugfix
+#echo "File: ${LISTARR[$fi]} , numPCM: $numPCM , numSCF: $numSCF , PROGNAME: $PROGNAME , NTERM: $NTERM"	
+	
+### current Gaussian-implementation
+if [[ ( $numPCM -eq 1 && $numSCF = "2" ) && ( $PROGNAME = "Gaussian" && $NTERM = 2 ) ]] ; then
+
+	### remove Checkpoint-File
+	CHKFILE=$(grep -m1 "checkpoint file" ${LISTARR[$fi]} | awk '{print $6}' | cut -d'"' -f2)
+	CHKPATH=$(echo ${LISTARR[$fi]} | rev | cut -f2-100 -d'/' | rev)
+	CHKFILE="$CHKPATH"/"$CHKFILE"
+	if [ -f "$CHKFILE" ]; then rm $CHKFILE; fi
+				
+	#SSCORR=$(echo "(8.3144622*298.15*3.80879881*0.0000001)*(l(8.3144622*(1000/101325)*298.15))" | bc -l)
+	SSCORR=.00301880430536378077
+	SOLVENT=$(grep -A30 "Polarizable Continuum Model" ${LISTARR[$fi]} | grep -m1 Solvent | awk '{print $3}' | cut -d',' -f1)
+	ENERGYGAS=$(cat ${LISTARR[$fi]} | grep -m1 "SCF Done:" | awk '{print $5}')
+	ENERGYSOLV=$(tac ${LISTARR[$fi]} | grep -m1 "SCF Done:" | awk '{print $5}')
+	Gsolv_au=$(echo $ENERGYSOLV-$ENERGYGAS+$SSCORR | sed 's/--/+/g' | bc -l | xargs printf "%.*f\n" 6)
+	Gsolv=$(echo $Gsolv_au*627.5095 | bc -l | xargs printf "%.*f\n" 1)
+fi
 }
 
+unset SOLVENT LIST LISTARR
+
+SCRIPTDIR=`dirname $(readlink -f ${0})`
 LIST=`find . -maxdepth 1 ! -name 'slurm*.out' -name '*.out' -type f`
 LISTARR=($LIST)
+VERBOSITY=0
 
-while getopts "s:c" OPTION; do
+while getopts "f:s:cvh" OPTION; do
 	case $OPTION in
-	s)
-		SOLVENT=$OPTARG
+	f)	LIST=$OPTARG
+		LISTARR=($LIST)
+		for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
+		do
+			if [ ! -f ${LISTARR[@]} ]; then echo "Error: File(s) do(es) not exist."; exit; fi
+		done
+	;;
+	s)	SOLVENT=$OPTARG; SOLVENT=$(echo $SOLVENT | tr [:upper:] [:lower:])
 		echo "Apply SMD model for $SOLVENT"
 		for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
 		do
 			comp_solv
 		done
 	;;
-	c)
-		for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
+	c)	for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
 		do
-			unset numPCM numSCF
-			numPCM=$(grep -c "Polarizable Continuum Model" ${LISTARR[$fi]})
-			numSCF=$(grep -c "SCF Done:" ${LISTARR[$fi]})
-			if [ "$numPCM" = "1" ] & [ "$numSCF" = "2" ]
-			then
-				FILE=${LISTARR[$fi]}
-				CHKFILE=$(grep -m1 "checkpoint file" $FILE | awk '{print $6}' | cut -d'"' -f2)
-				if [ -f "$CHKFILE" ]; then rm $CHKFILE; fi
-				calc_solv
-				echo "free solvation energy including standard state correction ($SOLVENT, T = 298.15 K)"
-				echo "$Gsolv kcal/mol [ $Gsolv_au a.u. ]"
+			calc_solv
+			if [ ! -z $Gsolv ]; then
+				case $VERBOSITY in
+				0)	echo "G_solv including standard state correction ($SOLVENT, T = 298.15 K, c = 1 mol/L)"
+					echo "$Gsolv kcal/mol [ $Gsolv_au a.u. ]"
+				;;
+				1)	echo "$Gsolv_au $SOLVENT"
+				;;
+				esac
 			fi
 		done
 	;;
+	v) VERBOSITY=1
+	;;
+	h)	vim $SCRIPTDIR/help_doSMD.txt; exit
+	;;
+	\?) echo "Invalid option: -$OPTARG"; exit
+	;;
 	esac
 done
-
-

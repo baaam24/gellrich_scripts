@@ -6,9 +6,6 @@
 # please report any bugs and suggestions via mail or during cigarette breaks
 #
 
-
-
-
 # define variables
 VERSION="0.2" # basic ORCA implementation done
 USERFILEPATH=`whoami`
@@ -22,11 +19,11 @@ CSVDELIM=";"
 DECISEP="."
 SCRIPTDIR=`dirname $(readlink -f ${0})`
 MAXFILES=25 # maximal files summary will read without extra user input
-DEPTH=all #depth of search -1=all 0=current n=n subfolders
+#DEPTH=all #depth of search -1=all 0=current n=n subfolders
 VERBOSITY=0 # verbosity of the output on terminal
 SI_vers=0 # which kind of SI file is written ( Default: 0 = none )
-VARFILE=all # given output-file for analysis ( Default: all ) #TIZIAN  
-
+VARFILE=all # given output-file for analysis ( Default: all ) 
+unset DEPTH #depth of search, =all subfolders by default 
 
 ######################################################
 #            Functions for reading various stuff
@@ -47,7 +44,7 @@ echo -e -n "\033[0;32m OK: \033[0m "
 function format_strings { # formats stuff like the full path to the file, the dir in which the file is stored and the filename
 FILENAME=`echo " $FILEPATH" | sed -e 's@\/@ @g' | awk '{print $NF}'`
 FILENAMFORMATTED=`echo "$FILENAME" | cut -c -24 `
-
+FILEPATHFORMATTED=`echo "$FILEPATH" | rev | cut -c -24 | rev`
 FULLPATH=$FILEPATH 
 }
 
@@ -74,13 +71,32 @@ fi
 function find_methode { # gives the used Method
 if [ $PROGNAME = "Gaussian" ]
 then
-TEST=`grep -m 1 "GINC-" $FILEPATH `
+	TEST=`grep -m 1 "GINC-" $FILEPATH `
 	if [ -n "$TEST" ]
 	then
-	RAW=`grep -m 1 "GINC-" $FILEPATH | sed -e 's.\\\. .g'`
-	METH=` echo $RAW | awk '{print $5}'`
-	BASIS=`echo $RAW | awk '{print $6}'`
+		RAW=`grep -m 1 "GINC-" $FILEPATH | sed -e 's.\\\. .g'`
+		METH=` echo $RAW | awk '{print $5}'`
+		BASIS=`echo $RAW | awk '{print $6}'`
 	fi
+
+#### search for additive Dispersion correction considering GD2, GD3, GD3BJ
+	unset DISPCORR
+	for DISPKEY in GD2 GD3; do
+		if grep -i -q "empiricaldispersion=$DISPKEY" $FILEPATH; then
+			DISPCORR=$DISPKEY
+		fi
+	done
+	
+	case $DISPCORR in 
+		GD2) METH=$METH'-D2'
+		;;
+		GD3)	if grep -i -q "empiricaldispersion=GD3BJ" $FILEPATH; then
+					METH=$METH'-D3(BJ)'
+				else
+					METH=$METH'-D3'
+				fi
+		;;
+	esac
 fi
 
 
@@ -88,7 +104,8 @@ if [ $PROGNAME = "ORCA" ]
 then
 RAW=`grep "| " $FILEPATH  | grep "!"`
 METH=` echo $RAW | awk '{print $4}'`
-BASIS=`echo $RAW | awk '{print $5}'`
+BASIS=`grep "Your calculation utilizes the basis:" $FILEPATH | awk '{print $NF}'`
+#BASIS=`echo $RAW | awk '{print $5}'`
 fi
 }
 
@@ -132,19 +149,26 @@ fi
 
 function find_ther_corr { # finds the themal corrections to electronic Energy
  
- 
 if [ $PROGNAME = "Gaussian" ]
 then
 TEST=`grep -c -i "Zero-point correction=" $FILEPATH `
 	if [ "$TEST" != "0" ]
 	then
 	
-	TEST=`grep -m 1 -A 8 "Zero-point correction=" $FILEPATH`
+	TEST=`grep -m 1 -A 15 "Zero-point correction=" $FILEPATH`
 	
 	ZPVE=`       echo -e "$TEST"| grep "Zero-point correction=" | awk '{print $3}'`	
 	ENERG_THERM=`echo -e "$TEST"| grep "Thermal correction to Energy=" | awk '{print $5}'`
 	ENTHALPY=`  echo -e "$TEST" | grep "Thermal correction to Enthalpy=" | awk '{print $5}'`
 	GIBBS=`    echo  -e "$TEST" | grep "Thermal correction to Gibbs Free Energy=" | awk '{print $7}'`
+	
+	### Grotvib neglects the translational contribution to entropy
+
+	unset S_tot S_trans S_rotvib
+	S_tot=$(echo "$TEST" | grep "Total" | awk '{print $NF}')
+	S_trans=$(echo "$TEST" | grep "Translational" | awk '{print $NF}')
+	S_rotvib=$(echo $S_tot-$S_trans | bc -l)
+	Grotvib=$(echo "($ENTHALPY-(298.15*(($S_rotvib)/(1000*627.5095))))" | sed 's/--/+/' | bc -l | xargs printf "%.*f\n" 6)
 	
 	# version discarded to enhance readability
 #	RAW=`grep -A 8 "Zero-point correction=" $FILEPATH| awk 'NF>1{print $NF}'`
@@ -310,6 +334,18 @@ fi
 
 }
 
+function find_Nimag_string { # MIN (if NT=2 & IMAG=0), TS (if NT=2 & IMAG=1), or ERROR 
+
+find_Nimag
+find_NTerm
+
+unset IMAGSTRING	
+if [ "$NTERM" -eq 2 ] & [ "$IMAG" -eq 0 ]; then IMAGSTRING='MIN'; fi
+if [ "$NTERM" -eq 2 ] & [ "$IMAG" -eq 1 ]; then IMAGSTRING='TS'; fi
+if [ -z "$IMAGSTRING" ]; then IMAGSTRING='ERROR'; fi
+
+}
+
 function reset_vars { # set all variables to NA to resolve issues in console output 
 NA="-"
 
@@ -326,7 +362,45 @@ PROG="$NA"
 REV="$NA" 
 RUNTIME="$NA" 
 NTERM="$NA" 
-IMAG="$NA" 
+IMAG="$NA"
+Gsolv="$NA"
+SOLVENT="$NA"
+Grotvib="$NA"
+}
+
+function merge_data {
+		unset LEVEL NOTES ORCAFILEPATH STOREFILEPATH SMDFILEPATH NUMSMD SMDOUTPUT SOLVENT Gsolv
+		LEVEL="$METH"/"$BASIS"
+		NOTES=$(echo "$PROG $REV")
+		
+		ORCAFILEPATH=$(echo $FILEPATH | rev | cut -f2-10 -d'.' | rev); ORCAFILEPATH="$ORCAFILEPATH"_SP.out
+		if [ -f "$ORCAFILEPATH" ]; then 
+			STOREFILEPATH=$FILEPATH
+			FILEPATH=$ORCAFILEPATH
+			ident_prog
+			find_NTerm
+			if [ "$NTERM" -eq 1 ] && [ "$PROGNAME" = "ORCA" ]; then
+				find_energ
+				find_methode
+				find_version
+				LEVEL="$METH"/"$BASIS"//"$LEVEL"
+				NOTES=$(echo "$PROGNAME $REV / $NOTES")
+			fi
+			FILEPATH=$STOREFILEPATH
+		fi
+		
+		SMDFILEPATH=$(echo $FILEPATH | rev | cut -f2-10 -d'.' | rev); 
+		NUMSMD=$(find \( -wholename "$SMDFILEPATH[_-]SMD[_-]*.out" \) | wc -l)
+		if [ "$NUMSMD" -eq 1 ]; then
+			SMDFILEPATH=$(find \( -wholename "$SMDFILEPATH[_-]SMD[_-]*.out" \))
+			SMDOUTPUT=$(doSMD -f $SMDFILEPATH -v -c)	### prints: Gsolv[a.u.] solvent level-of-theory
+			SOLVENT=$(echo $SMDOUTPUT | awk '{print $2}')
+			Gsolv=$(echo $SMDOUTPUT | awk '{print $1}')
+		else
+			Gsolv="$NA"
+		fi
+		
+		LEVEL=$(echo $LEVEL | sed 's/RPBE1PBE/PBE0/g' | sed 's/def2SVP/def2-SVP/g')
 }
 
 function gen_SI_v1 {
@@ -436,7 +510,7 @@ NOTES+="SI_written_(TXT)"
 # show welcome message
 echo -n "summary version $VERSION    "
 
-while getopts ":hd:s:cn:vi:f:" OPTION; do	# read variables
+while getopts ":hd:s:cn:v:i:f:" OPTION; do	# read variables
   case $OPTION in
     h) 
 	vim $SCRIPTDIR/help_summary.txt  
@@ -449,24 +523,25 @@ while getopts ":hd:s:cn:vi:f:" OPTION; do	# read variables
 	DECISEP=$OPTARG
 	;;
 	c)
-	DEPTH=0
+	DEPTH=1
+	echo "... searching in only the current folder"
 	;;
 	n)
-	DEPTH=$OPTARG
+	DEPTH=$OPTARG; echo "... searching in this and $DEPTH subfolder(s)"; DEPTH=$((DEPTH+1))
 	;;
 	v)
-	VERBOSITY=1
+	VERBOSITY=$OPTARG # either 1 or 2 (default: 0)
 	;;
 	i)
 	SI_vers=$OPTARG
 	;;
-	f)					#TIZIAN
+	f)					
 	VARFILE=$OPTARG
 	;;
     \?)
 	prnt_error
     echo "Invalid option: -$OPTARG" >&2
-	echo "For Help type: sumary -h"
+	echo "For Help type: summary -h"
 	exit
     ;;
   esac
@@ -475,26 +550,17 @@ done
 
 #Defining the depth of search (-c -n) or output file (-f)
 
- case $VARFILE in								#TIZIAN
+ case $VARFILE in								
          all)
-         case $DEPTH in
-                 all)
-                 LIST=`find ! -name 'slurm*.out' -name "*.out"`
-                 echo "... searching in all subfolders"
-                 ;;
-                 0)
-                 LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "*.out"`
-                 echo "... searching in only the currend folder"
-                 ;;
-                 *)
-                 echo "... searching this and $DEPTH subfolders"
-                 DEPTH=`echo "$DEPTH + 1"  | bc`
-                 LIST=`find -maxdepth $DEPTH ! -name 'slurm*.out' -name "*.out"`
-                 ;;
-         esac
-         LISTARR=($LIST)
+			if [ -z $DEPTH ]; then DEPTH=1000; echo "... searching in all subfolders"; fi
+			if [ "$VERBOSITY" -ne 2 ]; then
+				LIST=`find -maxdepth $DEPTH ! -name 'slurm*.out' -name "*.out"`
+			else
+				LIST=`find -maxdepth $DEPTH \( -name "*.out" ! -name "slurm*.out" ! -name "*_SMD_*.out" ! -name "*_SP.out" \)`
+			fi
+			LISTARR=($LIST)
          ;;
-         *)									#TIZIAN 
+         *)									 
          echo "... search for file: "$VARFILE""
          LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "$VARFILE"`
          LISTARR=($LIST)
@@ -529,15 +595,10 @@ echo "user;$USERFILEPATH" >> $CSVFILEFILEPATH
 echo "directory;$DIR" >> $CSVFILEFILEPATH
 echo "host;$HOST" >> $CSVFILEFILEPATH
 echo "host IP;$HOSTIP" >> $CSVFILEFILEPATH
-echo "Hartree in kcal/mol;627.5096080305927; REF: https://www.weizmann.ac.il/oc/martin/tools/hartree.html" >> $CSVFILEFILEPATH
+echo "Hartree in kcal/mol;627.5095; REF: 10.1103/RevModPhys.84.1527 10.1063/1.4724320 10.1351/pac197951010001" >> $CSVFILEFILEPATH
 echo " " >> $CSVFILEFILEPATH
 
-TABLEHEAD="Filepath;filename;method; basisset; E(el); ZP corr.; E corr.; H corr.; G corr.; imaginary frequencies; Normal terminations; programm; Revison; Runtime; Notes"
-
-echo "$TABLEHEAD" >> $CSVFILEFILEPATH
-
 ######################################################
-
 
 case $SI_vers in # checking for valid SI version
 	0) # no SI file is written (default)
@@ -561,7 +622,7 @@ esac
 
 
 
-#table headers for console output
+#table headers for console output and *.csv files
 
 
 case $VERBOSITY in
@@ -569,9 +630,20 @@ case $VERBOSITY in
 	echo "      FILEPATH            |  E(SCF)    |  ZP      | G(korr)  |NT |IF  |Program   |   notes"
 	echo "--------------------------+------------+----------+----------+---+----+----------+----------- "
 	#     1-H2.out                  | -1958.4542 | 0.325657 | 0.269497 | 1 |  0 |     ORCA |                                |
+
+	TABLEHEAD="Filepath;filename;method; basisset; E(el); ZP corr.; E corr.; H corr.; G corr.; G_rv corr; imaginary frequencies; Normal terminations; programm; Revison; Runtime; Notes"
+	echo "$TABLEHEAD" >> $CSVFILEFILEPATH
 	;;
 	1)
-	echo "$ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS" #TIZIAN
+	echo "$ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS"
+	;;
+	2)
+	echo "      FILEPATH            |    E(SCF)    | H(korr)  | G(korr)  | G_rv(korr) |  G(solv)  | notes "
+	echo "--------------------------+--------------+----------+----------+------------+-----------+-------"
+	#     1-H2.out                  | -1958.4542xx | x.xxxxxx | 0.269497 | 0.xxxxxx   | -0.0xxxxx | ERROR 
+	
+	TABLEHEAD="Filepath;filename;E(el);H corr.;G corr.;G_rv corr;G_solv;Solvent;Stationary Point; Level of Theory; Notes"
+	echo "$TABLEHEAD" >> $CSVFILEFILEPATH
 	;;
 esac
 
@@ -585,22 +657,35 @@ NOTES=""
 reset_vars
 
 # gathering Informations
-ident_prog
-format_strings
-find_methode
-find_energ
-find_ther_corr
-find_Nimag
-find_NTerm
-find_version
-find_runtime
 
+case $VERBOSITY in
+	2)
+		ident_prog
+		format_strings
+		find_methode
+#		find_energ
+		find_ther_corr
+		find_version
+#		find_runtime
+		find_Nimag_string
+		merge_data
+		
+		echo "$FULLPATH;$FILENAME;$ENERG_EL;$ENTHALPY;$GIBBS;$Grotvib;$Gsolv;$SOLVENT;$IMAGSTRING;$LEVEL;$NOTES" >> $CSVFILEFILEPATH
+	;;
+	*)
+		ident_prog
+		format_strings
+		find_methode
+		find_energ
+		find_ther_corr
+		find_Nimag
+		find_NTerm
+		find_version
+		find_runtime
 
-# Output of Informations to the CSV-File
-
-echo "$FULLPATH;$FILENAME;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$IMAG;$NTERM;$PROG;$REV;$RUNTIME;$NOTES" >> $CSVFILEFILEPATH
-
-
+		echo "$FULLPATH;$FILENAME;$METH;$BASIS;$ENERG_EL;$ZPVE;$ENERG_THERM;$ENTHALPY;$GIBBS;$Grotvib;$IMAG;$NTERM;$PROG;$REV;$RUNTIME;$NOTES" >> $CSVFILEFILEPATH		
+	;;
+esac	
 
 #output to SI-file
 case $SI_vers in # checking for valid SI version
@@ -646,7 +731,17 @@ case $VERBOSITY in
 	printf '\n'
 	;;
 	1)
-	echo "$ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS"	#TIZIAN
+	echo "$ENERG_EL $ZPVE $ENERG_THERM $ENTHALPY $GIBBS"	
+	;;
+	2)
+	printf '%-25s | ' $FILEPATHFORMATTED 
+	printf '%12.12s | ' $ENERG_EL
+	printf '%8.8s | ' $ENTHALPY 
+	printf '%8.8s | ' $GIBBS 
+	printf '%8.9s   | ' $Grotvib
+	printf '%9.9s | ' $Gsolv
+	printf '%4.5s ' $IMAGSTRING
+	printf '\n'
 	;;
 esac
 

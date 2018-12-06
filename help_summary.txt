@@ -25,8 +25,9 @@ Following commands are supported:
 -n	narrow depth of search
 	searches in n-Subfolders
 -v	verbose command line output
-	shows a verbose output
-	does not affect the CSV File
+	"0" default
+	"1" shows a verbose output and does not affect the CSV File
+	"2" shows E(SCF) from an ORCA-file [*_SP.out], thermal corrections from a Gaussian-file and Gsolv from a Gaussian SMD-computation (see doSMD) [*_SMD_*] if all files are within the same directory 
 -i	supporting Information
 	"0" no SI file  
 	"1" plain-text file is written 

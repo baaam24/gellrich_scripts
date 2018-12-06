@@ -1,9 +1,18 @@
 #!/bin/bash
 #
 # conformer search using OpenBabel
-# Syntax: getConformers [FILE]
+# Syntax: getConformers <FILE>
 #
-#
+
+SCRIPTDIR=`dirname $(readlink -f ${0})`
+while getopts "f:s:cvh" OPTION; do
+	case $OPTION in
+		h)	vim $SCRIPTDIR/help_getConformers.txt; exit
+		;;
+		\?) echo "Invalid option: -$OPTARG"; exit
+		;;
+	esac
+done
 
 #### initial geometry
 FILE=$1
