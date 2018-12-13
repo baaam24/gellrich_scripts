@@ -57,38 +57,9 @@ COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $
 test=$(grep -i -o "Redundant internal coordinates found in file" $1)
 
 if [[ -z $test ]]; then
-		
 	echo -e "\e[33mNo frequency calculation was performed.\033[0m"	
-
-	declare -a atomart_nummer
-	declare -a x_koord
-	declare -a y_koord
-	declare -a z_koord
-	
-	tac $1 | grep -m 1 -B $(($NATOMS+4)) "Standard orientation" > out2xyz_reverse.temp
-
-	cat out2xyz_reverse.temp | tac | sed '1d;2d;3d;4d;5d' | tr -s " " > out2xyz.temp
-
-	for ((var=1;var<=$NATOMS;var++))
-	do
-		atomart_nummer[$var]=$(head -n $var out2xyz.temp | tail -n 1 | awk ' { print $2 } ') 
-		x_koord[$var]=$(head -n $var out2xyz.temp | tail -n 1 | awk ' { print $4 } ')
-		y_koord[$var]=$(head -n $var out2xyz.temp | tail -n 1 | awk ' { print $5 } ')
-		z_koord[$var]=$(head -n $var out2xyz.temp | tail -n 1 | awk ' { print $6 } ')
-	done
-
-	for ((var=1;var<=$NATOMS;var++))
-	do
-		echo -e "${atomart_nummer[$var]}\t${x_koord[$var]}\t${y_koord[$var]}\t${z_koord[$var]}" >> ${1/.out}.xyz
-	done
-
+	tac $1 | grep -m 1 -B $(($NATOMS+4)) "Input orientation" | tac | sed 1,5d | awk '{print $2 "\t"  $4 "\t" $5 "\t" $6}' > ${1/.out}.xyz
 	echo -e "Converting \033[1;32m$1\033[0m to \033[1;32m${1/.out}.xyz\033[0m"
-
-	rm out2xyz.temp
-	rm out2xyz_reverse.temp
-	
-	echo ""
-
 	exit
 fi
 
