@@ -47,7 +47,7 @@ fi
 
 NATOMS=`grep -m 1 "NAtoms=" $1 | awk '{print $2}' | sed -e 's/ //g'`
 
-COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $1 ` #read the coordinates used for the frequency computation
+COORDS_RAW=`tac $1 | grep -m1 -i -B $NATOMS "Redundant internal coordinates found in file." | tac` #read the coordinates used for the frequency computation
 
 ##############################################################
 #Das Skript erkennt, ob eine Frequenzrechnung ausgefuehrt wurde
