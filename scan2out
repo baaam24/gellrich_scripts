@@ -17,6 +17,7 @@ done
 LIST=`find -maxdepth 1 ! -name 'slurm*.out' -name "*.out"`
 
 SCANVAR=$(grep Scan $LIST | grep -m1 ! | awk '{print $2}')
+SCANVAR=$(echo "$SCANVAR ")
 numSTEP=$(grep "Number of optimizations in scan=" $LIST | awk '{print $NF}')
 numOPT=$(grep -c "Optimization completed" $LIST | awk '{print $NF}')
 diffSTEPOPT=$(echo $numSTEP-$numOPT | bc -l)
