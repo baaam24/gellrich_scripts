@@ -10,8 +10,9 @@ stunden=72
 ausfuehren=false
 route="# pbe1pbe/def2SVP opt freq scf=tight int(grid=ultrafine) maxdisk=100gb empiricaldispersion=gd3bj"
 transition_state="false"
+CHKFILE=true
 
-while getopts "f:stH:n:M:hSc:m:" OPTION
+while getopts "Cf:stH:n:M:hSc:m:" OPTION
 do
 	case $OPTION in 
 	m)
@@ -39,6 +40,8 @@ do
 		;;
 	s)
 		ausfuehren=true
+		;;
+	C)	CHKFILE=false
 		;;
 ###########################################################################################
 ############################# ORCA SP DLPNO-CCSDT-Calculation #############################
@@ -163,7 +166,7 @@ sed -i '1ipufferzeile' $file
 sed -i "1i$route" $file
 sed -i "1i\%mem=${hauptspeicher}MB" $file
 sed -i "1i\%nprocshared=${prozessoren}" $file
-sed -i "1i\%chk=${file/.xyz}.chk" $file
+if [ $CHKFILE != "false" ]; then sed -i "1i\%chk=${file/.xyz}.chk" $file; fi
 
 echo 'pufferzeile' >> $file
 echo 'pufferzeile' >> $file

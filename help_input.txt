@@ -29,6 +29,10 @@ Set flags for alternative parameters:
 	
 	-s submit
 		created input file will be submitted to Gaussian16 or Orca
-	
+	-C
+		suppresses generation of a checkpoint-file
 	-h help
 		opens this help-file
+	
+
+
