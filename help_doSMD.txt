@@ -1,4 +1,4 @@
-This is the help file for >>doSMD<<
+This is the help file for >>doSMD<< (Jama Ariai)
 
 doSMD - allows to either prepare or analyze an SMD-computation 
 Following commands are implemented:
@@ -6,8 +6,11 @@ Following commands are implemented:
 doSMD -f <FILEPATH> -s <SOLVENT>	prepares an SMD computation for <SOLVENT> at PBE0/def2-SVP level for <FILEPATH>
 					omit '-f <FILEPATH>' to use all present *.out files in the current directory
 
-doSMD -f <FILEPATH> -c (-b)		calculates the free energy of solvation (T=298.15K, c=1mol/L) for <FILEPATH> and removes the corresponding *.chk-file
+doSMD -f <FILEPATH> (-b) -c		calculates the free energy of solvation (T=298.15K, c=1mol/L) for <FILEPATH> and removes the corresponding *.chk-file
 					omit '-f <FILEPATH>' to use all present SMD-output files in the current directory
 					optional: add '-b' for a brief output 
 					
+doSMD -f <FILEPATH> -t			calculate an additive, non-empirical G-correction for the solution-phase translational entropy
+					for more information see 10.1021/jp0540499 or ask me
+					omit '-f <FILEPATH>' to use all present SMD-output files in the current directory
 

@@ -393,7 +393,7 @@ function merge_data {
 		NUMSMD=$(find \( -wholename "$SMDFILEPATH[_-]SMD[_-]*.out" \) | wc -l)
 		if [ "$NUMSMD" -eq 1 ]; then
 			SMDFILEPATH=$(find \( -wholename "$SMDFILEPATH[_-]SMD[_-]*.out" \))
-			SMDOUTPUT=$(doSMD -f $SMDFILEPATH -v -c)	### prints: Gsolv[a.u.] solvent level-of-theory
+			SMDOUTPUT=$(doSMD -f $SMDFILEPATH -b -c)	### prints: Gsolv[a.u.] solvent level-of-theory
 			SOLVENT=$(echo $SMDOUTPUT | awk '{print $2}')
 			Gsolv=$(echo $SMDOUTPUT | awk '{print $1}')
 		else

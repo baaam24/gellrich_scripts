@@ -82,20 +82,34 @@ echo "$INPUT already exists."; exit
 fi
 }
 
-function calc_solv { #calculate G_solv including standard state correction (c = 1 mol/L, T = 298.15 K)
-unset SOLVENT ENERGYGAS ENERGYSOLV Gsolv Gsolv_au numPCM numSCF CHKFILE CHKPATH
+function check_computation { #CHECKCOMP=1 if CSM-computation terminated correctly
+unset numPCM numSCF 
 
+CHECKCOMP=0
 ident_prog
 find_NTerm
 numPCM=$(grep -c "Polarizable Continuum Model" ${LISTARR[$fi]})
 numSCF=$(grep -c "SCF Done:" ${LISTARR[$fi]})
-	
+
+### current Gaussian-implementation
+if [[ ( $numPCM -eq 1 && $numSCF = "2" ) && ( $PROGNAME = "Gaussian" && $NTERM = 2 ) ]] ; then
+	CHECKCOMP=1
+fi
+
+if [  $CHECKCOMP != 1 ]; then
+	echo "There is something wrong with ${LISTARR[$fi]}."
+	exit
+fi
+
+}
+
+function calc_solv { #calculate G_solv including standard state correction (c = 1 mol/L, T = 298.15 K)
+unset ENERGYGAS ENERGYSOLV Gsolv Gsolv_au CHKFILE CHKPATH
+
 ### bugfix
 #echo "File: ${LISTARR[$fi]} , numPCM: $numPCM , numSCF: $numSCF , PROGNAME: $PROGNAME , NTERM: $NTERM"	
 	
 ### current Gaussian-implementation
-if [[ ( $numPCM -eq 1 && $numSCF = "2" ) && ( $PROGNAME = "Gaussian" && $NTERM = 2 ) ]] ; then
-
 	### remove Checkpoint-File
 	CHKFILE=$(grep -m1 "checkpoint file" ${LISTARR[$fi]} | awk '{print $6}' | cut -d'"' -f2)
 	CHKPATH=$(echo ${LISTARR[$fi]} | rev | cut -f2-100 -d'/' | rev)
@@ -104,22 +118,49 @@ if [[ ( $numPCM -eq 1 && $numSCF = "2" ) && ( $PROGNAME = "Gaussian" && $NTERM =
 				
 	#SSCORR=$(echo "(8.3144622*298.15*3.80879881*0.0000001)*(l(8.3144622*(1000/101325)*298.15))" | bc -l)
 	SSCORR=.00301880430536378077
-	SOLVENT=$(grep -A30 "Polarizable Continuum Model" ${LISTARR[$fi]} | grep -m1 Solvent | awk '{print $3}' | cut -d',' -f1)
 	ENERGYGAS=$(cat ${LISTARR[$fi]} | grep -m1 "SCF Done:" | awk '{print $5}')
 	ENERGYSOLV=$(tac ${LISTARR[$fi]} | grep -m1 "SCF Done:" | awk '{print $5}')
 	Gsolv_au=$(echo $ENERGYSOLV-$ENERGYGAS+$SSCORR | sed 's/--/+/g' | bc -l | xargs printf "%.*f\n" 6)
 	Gsolv=$(echo $Gsolv_au*627.5095 | bc -l | xargs printf "%.*f\n" 1)
-fi
 }
+
+function find_solvent { #finds SOLVENT of the CSM-computation 
+unset SOLVENT
+SOLVENT=$(grep -A30 "Polarizable Continuum Model" ${LISTARR[$fi]} | grep -m1 Solvent | awk '{print $3}' | cut -d',' -f1)
+}
+
+function calc_Gtrans_corr {
+
+#### dG* = RT * ln {V/V*}) = RT * ln {kB*T/pV*}
+#### approx: dG* = 0.6 * ln {40626 / VOLUME IN ANG^3}
+#### additive G-correction
+#### ${LISTARR[$fi]} (=SMD computation)
+
+
+GASCONST='1.98720413479923518164*(10^-3)'; ### R in kcal/mol*K
+TEMPERATURE=298.15; ### T in K
+BOLTZCONST=1.3806488; ### k_B in 10^-23 J/K
+PRESSURE=101325; ### p in Pa 
+CAVITYVOLUME_Ang=$(grep "Cavity volume" ${LISTARR[$fi]} | awk '{print $5}') ### V* in Ang
+CAVITYVOLUME=$(echo $CAVITYVOLUME_Ang*10^-7 | bc -l) ### V* in 10^-7 m^3
+
+Gcorr_trans=$(echo "$GASCONST*$TEMPERATURE*l((($BOLTZCONST*$TEMPERATURE)/($PRESSURE*$CAVITYVOLUME)))" | bc -l)
+Gcorr_trans_au=$(echo "$Gcorr_trans/627.5095" | bc -l | xargs printf "%.*f\n" 6)
+Gcorr_trans=$(echo $Gcorr_trans | xargs printf "%.*f\n" 1)
+
+#echo "bugfix: Gcorr_trans: $Gcorr_trans ; Gcorr_trans_au: $Gcorr_trans_au"
+
+}
+
 
 unset SOLVENT LIST LISTARR
 
 SCRIPTDIR=`dirname $(readlink -f ${0})`
 LIST=`find . -maxdepth 1 ! -name 'slurm*.out' -name '*.out' -type f`
 LISTARR=($LIST)
-VERBOSITY=0
+BREVITY=0
 
-while getopts "f:s:cvh" OPTION; do
+while getopts "f:s:ctbh" OPTION; do
 	case $OPTION in
 	f)	LIST=$OPTARG
 		LISTARR=($LIST)
@@ -137,19 +178,29 @@ while getopts "f:s:cvh" OPTION; do
 	;;
 	c)	for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
 		do
+			check_computation
+			find_solvent
 			calc_solv
-			if [ ! -z $Gsolv ]; then
-				case $VERBOSITY in
-				0)	echo "G_solv including standard state correction ($SOLVENT, T = 298.15 K, c = 1 mol/L)"
-					echo "$Gsolv kcal/mol [ $Gsolv_au a.u. ]"
-				;;
-				1)	echo "$Gsolv_au $SOLVENT"
-				;;
-				esac
-			fi
+			case $BREVITY in
+			0)	echo "G_solv including standard state correction ($SOLVENT, T = 298.15 K, c = 1 mol/L)"
+				echo "${LISTARR[$fi]}: $Gsolv kcal/mol [ $Gsolv_au a.u. ]"
+			;;
+			1)	echo "$Gsolv_au $SOLVENT"
+			;;
+			esac
+
 		done
 	;;
-	v) VERBOSITY=1
+	t)	for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
+		do
+			check_computation
+			find_solvent
+			calc_Gtrans_corr
+			echo "Additive G-correction for solution-phase translational entropy ($SOLVENT, T = $TEMPERATURE K, p = $PRESSURE Pa)"
+			echo "${LISTARR[$fi]}: $Gcorr_trans kcal/mol [ $Gcorr_trans_au a.u. ]"
+		done
+	;;
+	b) BREVITY=1
 	;;
 	h)	vim $SCRIPTDIR/help_doSMD.txt; exit
 	;;
@@ -157,3 +208,5 @@ while getopts "f:s:cvh" OPTION; do
 	;;
 	esac
 done
+
+
