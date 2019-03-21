@@ -1,0 +1,7 @@
+#!/bin/bash
+#
+# converts atomic coordinates from bohr (e.g. turbomole format) in angstrom (e.g. gaussian/orca format)
+#
+
+perl -ane 'print "$F[3] $F[0] $F[1] $F[2]\n"' < $1 | awk '{printf "%2s %16.12f %16.12f %16.12f\n", $1, $2*0.52917721092, $3*0.52917721092, $4*0.52917721092}'
+
