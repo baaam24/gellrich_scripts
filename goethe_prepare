@@ -14,14 +14,25 @@ echo "dumy cra st"
 while [ "`echo "$no_cores % $no_files" | bc`" -ne "0" ] && [ "$no_files" -lt "40" ] #when modulo =! 0
 do
 
+#echo *.dat | awk '{print $1}'
+
+
+
     case $program in 
-        Gaussian) 
-            echo -e "#dummy file \n \n %nprocshared=  %pal nprocs= \n %Mem=   %MaxCore="  > dummy_$counter.dat
+        Gaussian)
+            hostfile=`echo *.dat | awk '{print $1}'`            #choose one file as "donor"
+            cp $hostfile dummy_$counter.dat                     #copy donor to build dummy
+            echo "-- dummy file --" >> dummy_$counter.dat       #destroy dummy-file to provoke early error termination
+#           echo -e "#dummy file \n \n %nprocshared=  %pal nprocs= \n %Mem=   %MaxCore="  > dummy_$counter.dat
             no_files=`ls -l | grep -c  ".dat"`
             
         ;;
         ORCA)
-            echo -e "#dummy file \n \n %nprocshared=  %pal nprocs= \n %Mem=   %MaxCore="  > dummy_$counter.inp
+            hostfile=`echo *.inp | awk '{print $1}'`            #choose one file as "donor"
+            cp $hostfile dummy_$counter.inp                     #copy donor to build dummy
+            echo "-- dummy file --" >> dummy_$counter.inp       #destroy dummy-file to provoke early error termination
+            cp $hostfile dummy_$counter.inp
+#           echo -e "#dummy file \n \n %nprocshared=  %pal nprocs= \n %Mem=   %MaxCore="  > dummy_$counter.inp
             no_files=`ls -l | grep -c  ".inp"`
         ;;
         *)
