@@ -87,7 +87,7 @@ case $HOST in
 	HALO )
 	shift_files; squeue_1
 	;;
-	LOEWE )
+	GOETHE )
 	shift_files; squeue_1
 	;;
 	FUCHS )
