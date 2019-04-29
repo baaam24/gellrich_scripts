@@ -96,9 +96,9 @@ echo "nojobcores $no_job_cores"
 # buffer used by submit-scrit: 20%
 # mem of "small" node 192GB => 160 GB RAM per node usable
 # memory one job can use: (MB)
-job_mem=`echo " 160 * 1024 / $no_files" | bc `
+job_mem=`echo " 160 * 1000 / $no_files" | bc `
 # usable memory per core (MB)
-job_cpu_mem=`echo " 160 * 1024 / $no_cores" | bc `
+job_cpu_mem=`echo " 160 * 1000 / $no_cores" | bc `
 
 
 
