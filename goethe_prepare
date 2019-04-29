@@ -1,3 +1,142 @@
+#!/bin/bash
+#
+# tool to prepare the working directory for calcualtions on gothe
+# checks and changes memory, Processors and number of jobs to work with the submit-sripts
+
+# function section
+
+function dummy_creation {
+
+counter=1
+
+echo "dumy cra st"
+
+while [ "`echo "$no_cores % $no_files" | bc`" -ne "0" ] && [ "$no_files" -lt "40" ] #when modulo =! 0
+do
+
+    case $program in 
+        Gaussian) 
+            echo -e "#dummy file \n \n %nprocshared=  %pal nprocs= \n %Mem=   %MaxCore="  > dummy_$counter.dat
+            no_files=`ls -l | grep -c  ".dat"`
+            
+        ;;
+        ORCA)
+            echo -e "#dummy file \n \n %nprocshared=  %pal nprocs= \n %Mem=   %MaxCore="  > dummy_$counter.inp
+            no_files=`ls -l | grep -c  ".inp"`
+        ;;
+        *)
+        echo "in dumm-creation"
+        exit;;
+    esac
+    
+counter=`echo " $counter + 1 " | bc `
+    
+done
+
+
+echo "done"
+
+}
+
+
+
+
+
+
+#  startup, gathering of informations
+
+no_dat_files=`ls -l | grep -c  ".dat"`
+no_inp_files=`ls -l | grep -c  ".inp"`
+no_cores=40 
+
+
+
+# are files pressent and just of one kind ?
+
+if [ "$no_dat_files" = "0" ] && [ "$no_inp_files" = "0" ]
+ then echo "no supported input files found ... exiting"
+      exit 3
+ else 
+      if [ $no_dat_files != "0" ] && [ $no_inp_files != "0" ]
+      then echo "ORCA (*.inp) and G16 (*.dat) files found ... exiting"
+      exit 4
+      fi
+fi
+
+# which Proramm is used
+
+if [  "$no_dat_files" != "0" ]
+then program="Gaussian"
+     no_files=$no_dat_files
+else program="ORCA"
+     no_files=$no_inp_files
+fi
+
+# Check if number of cores is devisable without remainder by the number of jobs
+
+
+modulo=`echo "$no_cores % $no_files" | bc `
+if [ "$modulo" = "0" ]
+then echo "Number of cores divisible by number of jobs "
+else echo "Number of cores NOT divisible by number of jobs " # if not:
+     echo "dummy-job creation needed"                        # create a appropiate number of dummy-jobs
+     dummy_creation
+fi
+
+## fitting of parameters
+
+# number of cores per job:
+no_job_cores=`echo "$no_cores / $no_files" | bc `
+echo "nojobcores $no_job_cores"
+
+
+
+
+# number of memory per job
+# buffer used by submit-scrit: 20%
+# mem of "small" node 192GB => 160 GB RAM per node usable
+# memory one job can use: (MB)
+job_mem=`echo " 160 * 1024 / $no_files" | bc `
+# usable memory per core (MB)
+job_cpu_mem=`echo " 160 * 1024 / $no_cores" | bc `
+
+
+
+case $program in 
+        Gaussian) 
+        for inputfile in *.dat; 
+            do
+            sed -i "/%nprocshared=*/c\%nprocshared=$no_job_cores" $inputfile
+            sed -i "/%Mem=*/c\%Mem=$job_mem MB" $inputfile
+        done
+        ;;
+        ORCA)
+        for inputfile in *.inp; 
+            do
+            sed -i "/%pal nprocs*/c\%pal nprocs=$no_job_cores" $inputfile
+            sed -i "/%MaxCore*/c\%%MaxCore=$job_cpu_mem" $inputfile
+        done
+        ;;
+        *)
+        echo "ERROR during fitting of params"
+        exit;;
+esac
+
+
+
+
+
+
+
+
+
+echo "$no_dat_files $no_inp_files $program $no_files"
+
+
+
+
+
+
 
 
 
