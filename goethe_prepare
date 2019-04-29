@@ -116,14 +116,15 @@ case $program in
         for inputfile in *.dat; 
             do
             sed -i "/%nprocshared=*/c\%nprocshared=$no_job_cores" $inputfile
-            sed -i "/%Mem=*/c\%Mem=$job_mem MB" $inputfile
+            MB=mb
+            sed -i "/%Mem=*/c\%Mem=$job_mem$MB" $inputfile
         done
         ;;
         ORCA)
         for inputfile in *.inp; 
             do
             sed -i "/%pal nprocs*/c\%pal nprocs=$no_job_cores" $inputfile
-            sed -i "/%MaxCore*/c\%%MaxCore=$job_cpu_mem" $inputfile
+            sed -i "/%MaxCore*/c\%MaxCore=$job_cpu_mem" $inputfile
         done
         ;;
         *)
