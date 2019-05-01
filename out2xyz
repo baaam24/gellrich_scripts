@@ -20,6 +20,30 @@ do
 done 
 
 
+########################################
+# FUNKTIONEN 
+########################################
+
+##### adapted from summary-script at 01 May 2019
+function ident_prog { # identify the programm (gaussian, orca, ...) that created this OUT file
+#orca:
+IDENTORCA=`echo "$FILEHEAD" | grep -c "        * O   R   C   A *"`
+IDENTGAUSSIAN=`echo "$FILEHEAD" | grep -c " Entering Gaussian System, Link 0"`
+PROGID=0
+PROGNAME="none"
+
+if [ "$IDENTORCA" = "0" ] & [ "$IDENTGAUSSIAN" = "1" ]
+        then
+        PROGNAME="Gaussian"
+fi
+
+if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
+        then
+        PROGNAME="ORCA"
+fi
+
+}
+
 ##############################################################
 #Abbruch des Skripts, wenn kein Argument übergeben wurde
 ##############################################################
@@ -41,13 +65,36 @@ if [ -z $dateiendung ]; then
 	exit
 fi
 
+
+FILEHEAD=$(head -3 $1)
+ident_prog
+case $PROGNAME in
+	ORCA)
+
+
+######### ORCA (BETA)
+
+
+NATOMS=$(grep -m1 "Number of atoms" $1 | awk '{print $NF}')
+HELPVAR=$(echo $NATOMS+1 | bc -l)
+COORDS_RAW=$(tac $1 | grep -m1 -B"$HELPVAR" "CARTESIAN COORDINATES (ANGSTROEM)" | tac | tail -"$NATOMS")
+
+
+
+	;;
+
+	Gaussian)
+
+###### GAUSSIAN
+
+
 ##############################################################
 #Anzahl der Atome und die "Rohkoordinaten" werden eingelesen
 ##############################################################
 
 NATOMS=`grep -m 1 "NAtoms=" $1 | awk '{print $2}' | sed -e 's/ //g'`
 
-COORDS_RAW=`tac $1 | grep -m1 -i -B $NATOMS "Redundant internal coordinates found in file." | tac` #read the coordinates used for the frequency computation
+COORDS_RAW=`tac $1 | grep -m1 -i -B $NATOMS "Redundant internal coordinates found in file." | tac | sed -e 1d` #read the coordinates used for the frequency computation
 
 ##############################################################
 #Das Skript erkennt, ob eine Frequenzrechnung ausgefuehrt wurde
@@ -63,11 +110,25 @@ if [[ -z $test ]]; then
 	exit
 fi
 
+
+################
+
+	;;
+	\?)
+		##### if neither Gaussian nor Orca
+		echo "Specified Software not yet implemented."
+		exit
+	;;
+esac
+
+
+##### INDEPENDENT
+
 ##############################################################
 #Rohkoordinaten werden formatiert und in eine neue xyz Datei geschrieben
 ##############################################################
 
-COORDS=`echo "$COORDS_RAW" | sed -e 1d | sed -e 's/,0,/,/g' | sed -e 's/,-/    -/g' | sed -e 's/,/     /g' | sed -e "1ipufferzeile" | sed -e "1i$NATOMS" | sed -e 's/pufferzeile//g'` # some nice formatting
+COORDS=`echo "$COORDS_RAW" | sed -e 's/,0,/,/g' | sed -e 's/,-/    -/g' | sed -e 's/,/     /g' | sed -e "1ipufferzeile" | sed -e "1i$NATOMS" | sed -e 's/pufferzeile//g'` # some nice formatting
 
 echo -e "Converting \033[1;32m$1\033[0m to \033[1;32m${1/.out}.xyz\033[0m"
 echo "$COORDS" > ${1/.out}.xyz
