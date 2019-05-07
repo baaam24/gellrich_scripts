@@ -183,8 +183,9 @@ fi
 
 if [ $PROGNAME = "ORCA" ]
 then
-TEST=`grep -c "Analytical frequency calculation" $FILEPATH `
-	if [ "$TEST" != "0" ]
+TEST1=`grep -c "Analytical frequency calculation" $FILEPATH `
+TEST2=`grep -c "ORCA NUMERICAL FREQUENCIES" $FILEPATH `
+	if [ "$TEST1" != "0" ] || [ "$TEST2" != "0" ]
 	then
 	
 	# the Following Correctiosn can be found directly in the output. analogous to the Corrections found in Gaussian outputs
