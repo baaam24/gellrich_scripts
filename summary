@@ -199,8 +199,9 @@ TEST2=`grep -c "ORCA NUMERICAL FREQUENCIES" $FILEPATH `
 	#[ORCA gives the enthalpy correction based on the Total free energy]
 	TOTALCORRECTION=`grep "Total correction" $FILEPATH | awk '{print $3}'`
 	ENTHALPYCORRECTION=`grep "Thermal Enthalpy correction" $FILEPATH | awk '{print $5}'`
-	ENTHALPY=`echo "$TOTALCORRECTION + $ENTHALPYCORRECTION | bc" `
-
+	ENTHALPY=$(echo $TOTALCORRECTION+$ENTHALPYCORRECTION | bc -l)
+	TEST=$(echo $ENTHALPY | cut -c1)
+	if [ $TEST = "." ]; then ENTHALPY=$(echo 0"$ENTHALPY"); fi
 
 	fi
 fi
