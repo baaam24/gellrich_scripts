@@ -105,7 +105,11 @@ test=$(grep -i -o "Redundant internal coordinates found in file" $1)
 
 if [[ -z $test ]]; then
 	echo -e "\e[33mNo frequency calculation was performed.\033[0m"	
-	tac $1 | grep -m 1 -B $(($NATOMS+4)) "Input orientation" | tac | sed 1,5d | awk '{print $2 "\t"  $4 "\t" $5 "\t" $6}' > ${1/.out}.xyz
+	if grep -q "Standard orientation" $1; then
+		tac $1 | grep -m 1 -B $(($NATOMS+4)) "Standard orientation" | tac | sed 1,5d | awk '{print $2 "\t"  $4 "\t" $5 "\t" $6}' > ${1/.out}.xyz
+	else
+		tac $1 | grep -m 1 -B $(($NATOMS+4)) "Input orientation" | tac | sed 1,5d | awk '{print $2 "\t"  $4 "\t" $5 "\t" $6}' > ${1/.out}.xyz
+	fi
 	echo -e "Converting \033[1;32m$1\033[0m to \033[1;32m${1/.out}.xyz\033[0m"
 	exit
 fi

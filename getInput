@@ -38,7 +38,8 @@ done
 unset INPUTFILE OUTPUTFILE APPENDIX NAME
 TEMPLATEDIR=~/inputs/
 WORKDIR=.
-while getopts ":hi:o:a:n:d:" OPTION; do
+SETDIR=0
+while getopts "hi:o:a:n:Dd:" OPTION; do
 	case $OPTION in
 		h) echo "Help-File does not exist yet."; exit
 		;;
@@ -64,8 +65,10 @@ while getopts ":hi:o:a:n:d:" OPTION; do
 		;;
 		n) NAME=$OPTARG
 		;;
+		D) SETDIR=1
+		;;
 		d) WORKDIR=$OPTARG
-			if [ ! -d "$WORKDIR" ]; then mkdir $WORKDIR; fi
+			if [ ! -d "$WORKDIR" ]; then mkdir $WORKDIR; SETDIR=0; fi
 		;;
 	esac
 done
@@ -76,7 +79,13 @@ if [ -z "$NAME" ]; then
 	NAME=$(echo $NAME.$SUFFIX)
 fi
 
+if [ "$SETDIR" = 1 ]; then 
+	WORKDIR=$(echo $NAME | cut -f1 -d'.')
+	mkdir $WORKDIR
+fi
+
 FILE=$INPUTFILE; prepXYZ
+
 if [ ! -f $WORKDIR/$NAME ]; then cp $OUTPUTFILE $WORKDIR/$NAME; else echo "Error: $WORKDIR/$NAME already exists."; exit; fi
 echo -e "$COORDS\n" >> $WORKDIR/$NAME
 echo -e "$APPENDIX\n" >> $WORKDIR/$NAME
