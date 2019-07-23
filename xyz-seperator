@@ -1,0 +1,39 @@
+### xyz-seperator ver 0.1 23.07.19
+##  
+#   seperates a xyz* file with mutiple, consecutive structures 
+#   (e.g. crest_conformers)
+#   into seperate files 
+#   
+#
+
+input_file=$1
+
+
+lenght=`wc -l $input_file | awk '{print $1}'` 
+natoms=`head -n 1 $input_file` 
+nlines=`echo " $natoms + 2 " | bc `
+nconfors=`echo "$lenght / $nlines" | bc`
+
+
+confor=1
+begin=1
+end=$nlines
+
+while [ $confor -le $nconfors ]
+do 
+    #echo "Welcome $confor times" 
+    
+    
+    
+    
+    
+    sed -n "$begin","$end"p $input_file > conformer_$confor.xyz
+    
+    begin=`echo " $begin + $nlines " | bc`
+    end=`echo " $end + $nlines " | bc`
+    
+    
+     echo $(( confor++ ))
+     echo $begin $end
+
+done
