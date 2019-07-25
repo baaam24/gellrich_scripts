@@ -20,6 +20,7 @@ route_g16_ts="# pbe1pbe/def2SVP opt=(ts,noeigen,calcfc) freq scf=tight int(grid=
 route_orc_sp="! DLPNO-CCSD(T) def2-TZVP NoUseSym  def2-TZVP/C tightscf"
 route_orc_of="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF Opt Freq"
 route_orc_ts="! PBE0 def2-SVP def2/J RIJCOSX D3BJ TightSCF OptTS Freq"
+route_orc_po="! PBEh-3c TightSCF Opt AnFreq"
 
 block_orc_sp=" "
 block_orc_dft="%method \n\tGrid 4 \n\tFinalGrid 6 \nend "
@@ -277,6 +278,10 @@ case $program in
 				route=$route_orc_ts
 				prefix="TS_"
 				block=$block_orc_dft
+            p)                              #preoptimisation 
+                route=$route_orc_po
+				prefix="PO_"
+				block=$block_orc_dft            
 			;;
 			*)
 				echo "unknown runtype requested"
