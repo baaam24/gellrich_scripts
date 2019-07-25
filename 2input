@@ -278,7 +278,8 @@ case $program in
 				route=$route_orc_ts
 				prefix="TS_"
 				block=$block_orc_dft
-            p)                              #preoptimisation 
+            ;;
+            p)     
                 route=$route_orc_po
 				prefix="PO_"
 				block=$block_orc_dft            
