@@ -24,16 +24,6 @@ done
 # FUNKTIONEN 
 ########################################
 
-function Number2Element {
-ElementsLib="$PATHSCRIPTS/Elements-Library.txt"
-Translation=$(sed -n "$var"p $ElementsLib | awk '{print $NF}')
-var=$Translation
-}	
-
-
-
-
-
 
 ##### adapted from summary-script at 01 May 2019
 function ident_prog { # identify the programm (gaussian, orca, ...) that created this OUT file
@@ -110,9 +100,9 @@ if grep -q "Redundant internal coordinates found in file" $1; then
 	else
 			echo -e "\e[33mNo frequency calculation was performed.\033[0m"
 				if grep -q "Standard orientation" $1; then								#read the latest set of coordinates
-							COORDS_RAW=$(tac $1 | grep -m 1 -B $(($NATOMS+4)) "Standard orientation" | tac | sed 1,5d | awk '{print $2 " \t " $4 " \t " $5 " \t " $6}')
+							COORDS_RAW=$(tac $1 | grep -m 1 -B $(($NATOMS+4)) "Standard orientation" | tac | sed 1,5d | awk '{print $2 "   " $4 "   " $5 "   " $6}')
 								else
-											COORDS_RAW=$(tac $1 | grep -m 1 -B $(($NATOMS+4)) "Input orientation" | tac | sed 1,5d | awk '{print $2 " \t "  $4 " \t " $5 " \t " $6}')
+											COORDS_RAW=$(tac $1 | grep -m 1 -B $(($NATOMS+4)) "Input orientation" | tac | sed 1,5d | awk '{print $2 "   "  $4 "   " $5 "   " $6}')
 												fi
 											fi
 	;;
@@ -136,10 +126,8 @@ if [[ $COORDS_RAW =~ $re ]]; then
 	YCoord=($(echo "$COORDS_RAW" | awk '{print $3}'))
 	ZCoord=($(echo "$COORDS_RAW" | awk '{print $4}'))
 	for (( i=0 ; i < $NATOMS ; i++ )); do
-		var=${AtomicNumber[$i]}
-		Number2Element
-		Element[$i]=$var	
-		echo -e "${Element[$i]} \t ${XCoord[$i]} \t ${YCoord[$i]} \t ${ZCoord[$i]}" >> $TEMPFILE
+		Element[$i]=$(convertPTE -S ${AtomicNumber[$i]})	
+		echo -e "${Element[$i]}   ${XCoord[$i]}   ${YCoord[$i]}   ${ZCoord[$i]}" >> $TEMPFILE
 		if [ -z ${Element[$i]} ]; then translation=-1; fi
 	done
 	if ! [ "$translation" = -1 ] ; then 
