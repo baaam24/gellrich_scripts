@@ -14,7 +14,8 @@ MOLINERTIA_avg=1	# in 10^-44 kg*m^2 corresponding to: 10^-44/B_av
 
 function find_harmonicfreq { ### reads all harmonic frequencies from $FILE
 		### $FILE = Gaussian output containing FREQ computation
-			HARMFREQ=$(grep "Frequencies" $FILE | awk '{print $3,$4,$5}' | tr ' ' '\n')
+			HARMFREQ=$(grep "Frequencies" $FILE | awk '{print $3,$4,$5}' | tr ' ' '\n')	# Gaussian
+			#	HARMFREQ=$(grep "freq\." $FILE | awk '{print $2}')	# Orca
 				HARMFREQARR=($HARMFREQ)
 			}
 
