@@ -52,7 +52,7 @@ fi
 function gen_g16 {
 set_name
 
-echo "%chk=$base_name.chk" >> $in_file
+# echo "%chk=$base_name.chk" >> $in_file
 echo "%nprocshared=$proc" >> $in_file
 echo "%Mem=$mem " >> $in_file
 echo "$route" >> $in_file
