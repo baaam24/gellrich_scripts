@@ -124,7 +124,7 @@ case $program in
         for inputfile in *.inp; 
             do
             sed -i "/%pal nprocs*/c\%pal nprocs=$no_job_cores" $inputfile
-            sed -i "/%MaxCore*/c\%MaxCore=$job_cpu_mem" $inputfile
+            sed -i "/%MaxCore*/c\%MaxCore $job_cpu_mem" $inputfile
         done
         ;;
         *)
