@@ -1,0 +1,15 @@
+This is the help file for >>convertPTE<< (Jama Ariai)
+
+convertPTE - interconverts between Atomic Numbers, Element Names, Element Symbols and Standard Atomic Weights 
+Syntax: convertPTE [-OPTION] [INPUT]
+requires the appropiate Library 'lib_Periodic-Table-of-Elements_IUPAC2018.txt' in '~/gellrich_scripts/'
+
+OPTION = desired Output to print:
+N: prints atomic number 
+S: prints element symbol
+E: prints element name
+W: prints standard atomic weight
+
+if no flag is set, i.e., non of -N, -S, -E, and -W, then all information is printed
+
+INPUT = Atomic Number (1-118) or Element (symbol or name in English)
