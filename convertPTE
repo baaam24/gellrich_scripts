@@ -10,7 +10,7 @@ unset INPUT OUTPUTINDEX LibPTE col_N col_E col_S col_W SEARCH TARGET OUTPUT
 
 PATHSCRIPTS=$(dirname $0)
 OUTPUTINDEX=0
-LibPTE=$(find $PATHSCRIPTS/ -name "lib_*Periodic[+-_]Table*Elements*.txt" | head -1)
+LibPTE=$(find $PATHSCRIPTS/ -name "lib_*Periodic*Table*Elements*.txt" | head -1)
 if [ ! -f $LibPTE ]; then echo -e "\033[31mLibrary not found! Aborting.\033[0m"; exit; fi 
 LibHeader=$(head -1 $LibPTE | tr '[:upper:]' '[:lower:]')
 col_N=$(echo "$LibHeader" | sed -n "1 s/atomicnumber.*//p" | sed 's/[^\t*]//g' | wc -c)
@@ -107,6 +107,5 @@ do
 																																																																																																else
 																																																																																																		echo $OUTPUT
 																																																																																																	fi
-
 
 
