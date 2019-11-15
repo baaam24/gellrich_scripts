@@ -188,17 +188,20 @@ TEST2=`grep -c "ORCA NUMERICAL FREQUENCIES" $FILEPATH `
 	if [ "$TEST1" != "0" ] || [ "$TEST2" != "0" ]
 	then
 	
-	# the Following Correctiosn can be found directly in the output. analogous to the Corrections found in Gaussian outputs
-	ZPVE=`grep "Zero point energy" $FILEPATH | awk '{print $5}'`
-	ENERG_THERM=`grep "Total correction" $FILEPATH | awk '{print $3}'`
-	GIBBS=`grep "G-E(el)" $FILEPATH | awk '{print $3}'`
+	thermoline=$(tac $FILEPATH | grep -n -i -m1 "thermochemistry" | cut -f1 -d':')
+	THERMOSECTION=$(tac $FILEPATH | sed -n 1,"$thermoline"p | tac)
+	
+		# the Following Correctiosn can be found directly in the output. analogous to the Corrections found in Gaussian outputs
+	ZPVE=$(echo "$THERMOSECTION" | grep "Zero point energy" | awk '{print $5}')
+	ENERG_THERM=$(echo "$THERMOSECTION" | grep "Total correction" | awk '{print $3}')
+	GIBBS=$(echo "$THERMOSECTION" | grep "G-E(el)" | awk '{print $3}')
 	
 	# ORCA adds up the coorections subsequently to on another.
 	# The "Thermal Enthalpy correction" has to be addet to the "Total correction"  (ZPVE + thermal correction)
 	# to yield the same correction as stated by gaussian (based on Electronic energy )
 	#[ORCA gives the enthalpy correction based on the Total free energy]
-	TOTALCORRECTION=`grep "Total correction" $FILEPATH | awk '{print $3}'`
-	ENTHALPYCORRECTION=`grep "Thermal Enthalpy correction" $FILEPATH | awk '{print $5}'`
+	TOTALCORRECTION=$(echo "$THERMOSECTION" | grep "Total correction" | awk '{print $3}')
+	ENTHALPYCORRECTION=$(echo "$THERMOSECTION" | grep "Thermal Enthalpy correction" | awk '{print $5}')
 	ENTHALPY=$(echo $TOTALCORRECTION+$ENTHALPYCORRECTION | bc -l)
 	TEST=$(echo $ENTHALPY | cut -c1)
 	if [ $TEST = "." ]; then ENTHALPY=$(echo 0"$ENTHALPY"); fi
@@ -225,7 +228,9 @@ fi
 if [ $PROGNAME = "ORCA" ]
 then
 
-IMAG=`grep -c  "imaginary mode" $FILEPATH ` 
+	freqline=$(tac $FILEPATH | grep -n -i -m1 "FREQUENCIES" | cut -f1 -d':')
+	FREQSECTION=$(tac $FILEPATH | sed -n 1,"$freqline"p | tac)
+	IMAG=$(echo "$FREQSECTION" | grep -c  "imaginary mode")
 
 fi
 
