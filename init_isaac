@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# inintialisation script for interactive sessions using isaac
+
+
+ ## currently only usable for halo !!!
+
+hostname=`hostname`
+
+if [ "$hostname" = "dt640b" ] ; then
+	echo "Halo node (UG) detected! "
+
+	#remove the init dir from path
+	tmp=`echo $PATH | sed -e 's@:/usr/local/bin/init@@g'`
+	export PATH=$tmp
+
+	#echo "$PATH"
+
+	# setting up the paths to xtb and crest provided by me:
+	export PATH=/home/tizian/isaac/xtb/bin:$PATH
+	export PATH=/home/tizian/isaac/crest:$PATH
+
+
+	#echo "$PATH"
+	# configutring the xtb parameters
+
+	export MKL_NUM_THREADS=4
+	export OMP_THREAD_LIMIT=4
+	export OMP_NUM_THREADS=4,1
+	#export OMP_STACKSIZE=500m
+	#ulimit -s unlimited
+else
+	echo "It seems that you are not inside an interactive session."
+	echo "Start your session with: isaac [time] --interactive."
+	echo "After login in to the allocatet node (ssh [node]) "
+	echo "rerun this script using: source init_isaac. "
+
+	exit 
+fi
+
+

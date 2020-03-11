@@ -1,0 +1,293 @@
+#/bin/bash
+
+# ISAAC
+#
+#
+# general input:
+#
+# isaac [time] [runtype] [options]
+#
+# [time]: runtime in format of HH:MM:SS
+# [runtype]: runtime you want to use
+# 	--interactive
+#	-i
+#
+# 	--crest
+# 	-c
+# 	
+# 	--xtb
+# 	-x
+#	
+#[options]: options yout would normaly give xtb or crest		
+
+
+
+###########################
+#  definition of Vars     #
+###########################
+
+user=whoami
+jobscript="jobscript.sh" #name of the jobscript written herein
+js=$jobscript     #abbr. for readabilty
+runscript="runscript.sh" #name of the runscript written herein
+rs=$runscript 
+
+
+###########################
+#       Functions         #
+###########################
+
+
+
+
+does_file_exist () {
+
+if test -f "$1"; then
+	echo "$1 exist already. exitting ..."
+	exit
+fi
+
+
+}
+
+
+determine_cluster () {
+### determination of the currently used cluster system
+### necessary to determine scheduler
+
+cluster=`ident_host | awk '{print $1}'`
+
+case "$cluster" in 
+	unknown)
+		echo "for development purpose only"
+		scheduler="slurm"
+		;;
+	HALO)
+		scheduler="slurm"
+		;;
+	skylla)
+		scheduler="grid"
+		echo "determine_cluser: skylla with grid engine detected:"
+		echo "not implemented yet: aborting"
+		exit
+		;;
+	fuchs)
+		scheduler="slurm"
+		;;
+	goethe)
+		scheduler="slurm"
+		;;
+	*)
+		echo "detremine cluster: system unknown or not implemented yet"
+		echo "report to tizian"
+		exit
+		;;
+esac
+
+
+}
+
+
+generate_jobscript () { # the jobscript contains all information needet by the schedular and starts the runscript
+
+
+case "$cluster" in
+	unknown) 
+		echo "it semms you are running isaac localy"
+		echo "assuming you are developing or test issac"
+		echo "setting halo as cluster"
+		partion="UG"
+		ntasks=6
+		mem_per_cpu=4500
+
+		write_js_header slurm
+
+		echo "bash $rs" >> $js
+		
+		
+
+		;;
+	HALO)
+		partion="UG"
+		ntasks=6
+		mem_per_cpu=4500
+
+		write_js_header slurm
+		
+		echo "srun $rs" >> $js
+		;;
+	*)
+		echo "generate_jobscript cannot detect cluster"
+		echo "repot to tizian"
+		exit
+		;;
+
+esac
+
+}
+
+
+
+write_js_header () {
+## to keep generate_jobscript readable
+## hardcoding the header of the js
+
+case "$1" in
+	slurm)
+		{
+		echo "#!/bin/bash  " 
+		echo "#SBATCH --job-name=isaac  "
+		echo "#SBATCH --nodes=1  " 
+		echo "#SBATCH --cpus-per-task=1    "
+		echo "#SBATCH --mail-type=NONE  "
+		echo "#SBATCH --no-requeue      "  
+		echo "#SBATCH --partition=$partion  "
+		echo "#SBATCH --ntasks=$ntasks  "
+		echo "#SBATCH --mem-per-cpu=$mem_per_cpu  "
+		echo "#SBATCH --time=$time  "
+		echo " " 
+		echo "# optional params:  " 
+		} >> $js
+		;;
+	grid)
+		echo "you can read this beacaus teh grid engine is not implemeted yet" >> $rs
+		echo "write js header cannot work: grid engine not implemented yet"
+		exit
+		;;
+	*)
+		echo "something went wrong within write_js_header"
+		echo "report to tizian"
+		exit
+		;;
+
+esac
+
+
+}
+
+
+
+generate_runscript () { # the runscript "performs" the actual computations and manages tmp-files of the computations and the "clean-up"
+
+rs=$runscript     #abbr. for readabilty
+
+echo "#!/bin/bash" > $rs
+echo "$program $options >> output.out" >> $rs
+
+}
+
+
+submit_jobscript () {
+
+sbatch $jobscript
+
+#### later this should read somthing like sbatch jobsript.sh or better sbatch $jobscript
+}
+
+
+request_session () {
+
+#echo "request_session called. exiting"
+#exit
+
+case "$cluster" in
+	HALO)
+		echo "halo detected"
+		partion="UG"
+		ntasks=4
+		mem_per_cpu=2000
+
+		echo "please login to your session using: ssh [node] "
+		echo "after login finish the setup with: source init_isaac"
+		
+		salloc --time=$time --job-name=isaac --nodes=1  --cpus-per-task=1 --mail-type=NONE --ntasks=$ntasks --mem-per-cpu=$mem_per_cpu --partition=$partion
+		
+		exit
+	;;
+	*)
+		echo "cluster unkowm or not implemented"
+		echo " please report tizian"
+		exit
+	;;
+esac
+
+}
+
+###########################
+#    script execution     #
+###########################
+
+
+## startup:  checking for disruptive files, check inputformat
+
+#check for leftover files of prev run:
+# turned of during development
+
+
+#for i in $jobscript $runscript ; do
+# does_file_exist "$i" 
+#done
+
+input=$@
+
+time=`echo $input | awk '{print $1}'`
+
+if [[ "$time" =~ [0-9][0-9]:[0-9][0-9]:[0-9][0-9] ]]
+then
+		echo "requested runtime: $time "	
+else
+		echo "Invalid time format. Please correct"
+		exit
+fi
+
+
+# after complete startup the runtype and options are parsed 
+
+
+runtype=`echo $input | awk '{print $2}'`
+
+options=`echo "$input" |  cut  -d " " -f3-`
+
+# based on the chosen runtype the main scripts does its job:
+# e.g. write scripts, submitting them or try to reserve nodes
+
+case "$runtype" in
+	--interactive|--Interactive|-i)
+		determine_cluster
+		echo "interactive session on $cluster requested. starting now"
+		request_session
+		;;
+	--crest|--Crest|-c)
+		echo "starting crest job-submission"
+		program=crest
+
+		determine_cluster
+		generate_jobscript
+		generate_runscript
+		submit_jobscript
+		;;
+	--xtb|--Xtb|-x)
+		echo "starting xtb job-submission"
+		program=xtb
+
+		determine_cluster
+		generate_jobscript
+		generate_runscript
+		submit_jobscript
+		;;
+	*)
+		echo "unknown runtype specified:"
+		echo "please check your input carefully and try again"
+		exit
+		,,
+esac
+
+
+
+
+
+
+
+
+
+
