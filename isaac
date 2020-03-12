@@ -98,23 +98,18 @@ case "$cluster" in
 		echo "setting halo as cluster"
 		partion="UG"
 		ntasks=6
-		mem_per_cpu=4500
+		mem_per_cpu=1000
 
 		write_js_header slurm
-
-		echo "bash $rs" >> $js
-		
-		
-
+		write_js_body 
 		;;
 	HALO)
 		partion="UG"
 		ntasks=6
-		mem_per_cpu=4500
+		mem_per_cpu=1000
 
 		write_js_header slurm
-		
-		echo "srun $rs" >> $js
+		write_js_body		
 		;;
 	*)
 		echo "generate_jobscript cannot detect cluster"
@@ -136,7 +131,7 @@ case "$1" in
 	slurm)
 		{
 		echo "#!/bin/bash  " 
-		echo "#SBATCH --job-name=isaac  "
+		echo "#SBATCH --job-name=isac_$program "
 		echo "#SBATCH --nodes=1  " 
 		echo "#SBATCH --cpus-per-task=1    "
 		echo "#SBATCH --mail-type=NONE  "
@@ -165,23 +160,48 @@ esac
 
 }
 
+# runscript depr.
+
+#generate_runscript () { # the runscript "performs" the actual computations and manages tmp-files of the computations and the "clean-up"
+
+#rs=$runscript     #abbr. for readabilty
+
+#echo "#!/bin/bash" > $rs
+#echo "$program $options >> output.out" >> $rs
+
+#}
+
+write_js_body () {
 
 
-generate_runscript () { # the runscript "performs" the actual computations and manages tmp-files of the computations and the "clean-up"
+{
+echo ' tmp=`echo $PATH | sed -e 's@:/usr/local/bin/init@@g'` '
+echo ' export PATH=$tmp '
+echo ' '
+# setting up the paths to xtb and crest provided by me:
+echo 'export PATH=/home/tizian/isaac/xtb/bin:$PATH'
+echo 'export PATH=/home/tizian/isaac/crest:$PATH'
+echo ' '
+# configutring the xtb parameters
 
-rs=$runscript     #abbr. for readabilty
+echo 'export MKL_NUM_THREADS=6 '
+echo 'export OMP_THREAD_LIMIT=6 '
+echo 'export OMP_NUM_THREADS=6,1 '
+echo ' '
+# the actual computation
 
-echo "#!/bin/bash" > $rs
-echo "$program $options >> output.out" >> $rs
+echo " $program $options >> output.out "
+
+} >> $js
 
 }
+
 
 
 submit_jobscript () {
 
 sbatch $jobscript
 
-#### later this should read somthing like sbatch jobsript.sh or better sbatch $jobscript
 }
 
 
@@ -223,10 +243,9 @@ esac
 #check for leftover files of prev run:
 # turned of during development
 
-
-#for i in $jobscript $runscript ; do
-# does_file_exist "$i" 
-#done
+for i in $jobscript $runscript output.out ; do
+ does_file_exist "$i" 
+done
 
 input=$@
 
@@ -258,12 +277,12 @@ case "$runtype" in
 		request_session
 		;;
 	--crest|--Crest|-c)
-		echo "starting crest job-submission"
+		echo "creating: crest job submission"
 		program=crest
 
 		determine_cluster
 		generate_jobscript
-		generate_runscript
+		echo "submitting job to scheduler:"
 		submit_jobscript
 		;;
 	--xtb|--Xtb|-x)
@@ -272,7 +291,6 @@ case "$runtype" in
 
 		determine_cluster
 		generate_jobscript
-		generate_runscript
 		submit_jobscript
 		;;
 	*)
