@@ -18,7 +18,7 @@
 # 	--xtb
 # 	-x
 #	
-#[options]: options yout would normaly give xtb or crest		
+#[options]: options you would normaly give xtb or crest		
 
 
 
@@ -273,8 +273,11 @@ options=`echo "$input" |  cut  -d " " -f3-`
 case "$runtype" in
 	--interactive|--Interactive|-i)
 		determine_cluster
-		echo "interactive session on $cluster requested. starting now"
-		request_session
+		echo "start of interactive sessions currently deactivated "
+		exit
+#		echo "interactive session on $cluster requested. starting now"
+#		request_session
+		
 		;;
 	--crest|--Crest|-c)
 		echo "creating: crest job submission"
@@ -293,9 +296,13 @@ case "$runtype" in
 		generate_jobscript
 		submit_jobscript
 		;;
+	--help|--Help|-h)
+		vim help_isaac.txt
+		exit
 	*)
 		echo "unknown runtype specified:"
 		echo "please check your input carefully and try again"
+		echo "try isaac --help for more help"
 		exit
 		,,
 esac

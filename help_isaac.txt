@@ -1,0 +1,31 @@
+ISAAC 
+Interactive Search And Automated Conformer-sampling
+
+general input:
+
+isaac [time] [runtype] [options]
+
+[time]: runtime in format of HH:MM:SS
+
+[runtype]: runtime you want to use
+
+	--interactive	start an interactive session (currently turned off)
+	-i
+
+	--crest		submit a crest a crest computation to the scheduler
+	-c
+
+	--xtb		submit a xtb computation to the scheduler
+	-x
+
+[options]: options you would normaly give xtb or crest 
+
+examples:
+
+isaac 01:00:00 --crest pentane.xyz -T 6
+
+isaac 00:10:00 --xtb input.xyz --ohess
+
+
+
+
