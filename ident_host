@@ -1,17 +1,30 @@
 #!/bin/bash
 #
 # small supplemental script to identify the host its running on
+fuchs_or_goethe () {
+
+HOSTNAME=`hostname`
+
+case $HOSTNAME in
+	fuchs.cm.cluster ) echo "FUCHS $IP" ;;
+	login01.cm.cluster ) echo "GOETHE $IP" ;;
+	login02.cm.cluster ) echo "GOETHE $IP"
+esac
+}
+
+
+
 
 IP=`wget http://ipecho.net/plain -O - -q ; echo`
 
 case $IP in
-  134.176.2.178  ) echo  "SKYLLA $IP";;
-  134.176.2.178  ) echo  "SKYLLA $IP";;
-  134.176.2.180  ) echo  "SKYLLA $IP";;
-  134.176.10.42  ) echo  "HALO $IP";;
-  141.2.213.61   ) echo  "GOETHE $IP" ;;
-  141.2.213.49   ) echo  "FUCHS $IP" ;;
-  141.2.213.50   ) echo  "FUCHS $IP" ;;
-  134.176.10.214 ) echo  "Tizian_test $IP";;
+  	134.176.2.178  ) echo  "SKYLLA $IP";;
+  	134.176.2.178  ) echo  "SKYLLA $IP";;
+  	134.176.2.180  ) echo  "SKYLLA $IP";;
+  	134.176.10.42  ) echo  "HALO $IP";;
+  	141.2.213.61   ) fuchs_or_goethe ;;
+#  	141.2.213.49   ) echo  "FUCHS $IP" ;;
+#  	141.2.213.50   ) echo  "FUCHS $IP" ;;
+  	134.176.10.214 ) echo  "Tizian_test $IP";;
   *) echo  "unknown $IP";;
 esac

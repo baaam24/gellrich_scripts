@@ -64,17 +64,23 @@ case "$cluster" in
 		;;
 	HALO)
 		scheduler="slurm"
+		oldpath="/usr/local/bin/init"
+		newxtbpath="/home/tizian/isaac/xtb/bin"
+		newcrestpath="/home/tizian/isaac/crest"
 		;;
-	skylla)
+	SKYLLA)
 		scheduler="grid"
 		echo "determine_cluser: skylla with grid engine detected:"
 		echo "not implemented yet: aborting"
 		exit
 		;;
-	fuchs)
+	FUCHS)
 		scheduler="slurm"
+		oldpath="/home/chemcalc/gerbig/init/"
+		newxtbpath="/home/chemcalc/muellert/isaac"
+		newcrestpath="/home/chemcalc/muellert/isaac/xtb_6.2.3/bin"
 		;;
-	goethe)
+	GOETHE)
 		scheduler="slurm"
 		;;
 	*)
@@ -111,6 +117,16 @@ case "$cluster" in
 		write_js_header slurm
 		write_js_body		
 		;;
+	FUCHS)
+		partion="fuchs"
+		ntasks=20
+		mem_per_cpu=2000
+
+		write_js_header slurm
+		echo "#SBATCH --extra-node-info=2:10:1">> $js
+		echo "#SBATCH --account=agschreiner" >> $js
+		write_js_body		
+		;;
 	*)
 		echo "generate_jobscript cannot detect cluster"
 		echo "repot to tizian"
@@ -131,7 +147,7 @@ case "$1" in
 	slurm)
 		{
 		echo "#!/bin/bash  " 
-		echo "#SBATCH --job-name=isac_$program "
+		echo "#SBATCH --job-name=isaac_$program "
 		echo "#SBATCH --nodes=1  " 
 		echo "#SBATCH --cpus-per-task=1    "
 		echo "#SBATCH --mail-type=NONE  "
@@ -175,18 +191,20 @@ write_js_body () {
 
 
 {
-echo ' tmp=`echo $PATH | sed -e 's@:/usr/local/bin/init@@g'` '
+echo ' tmp=`echo $PATH | sed -e 's@:$oldpath@@g'` '
 echo ' export PATH=$tmp '
 echo ' '
 # setting up the paths to xtb and crest provided by me:
-echo 'export PATH=/home/tizian/isaac/xtb/bin:$PATH'
-echo 'export PATH=/home/tizian/isaac/crest:$PATH'
+echo -n "export PATH=$newxtbpath"
+echo ':$PATH'
+echo -n "export PATH=$newcrestpath"
+echo ':$PATH'
 echo ' '
 # configutring the xtb parameters
 
-echo 'export MKL_NUM_THREADS=6 '
-echo 'export OMP_THREAD_LIMIT=6 '
-echo 'export OMP_NUM_THREADS=6,1 '
+echo "export MKL_NUM_THREADS=$ntasks "
+echo "export OMP_THREAD_LIMIT=$ntasks "
+echo "export OMP_NUM_THREADS=$ntasks,1 "
 echo ' '
 # the actual computation
 
@@ -299,6 +317,7 @@ case "$runtype" in
 	--help|--Help|-h)
 		vim help_isaac.txt
 		exit
+		;;
 	*)
 		echo "unknown runtype specified:"
 		echo "please check your input carefully and try again"
