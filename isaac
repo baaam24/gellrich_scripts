@@ -26,11 +26,9 @@
 #  definition of Vars     #
 ###########################
 
-user=whoami
+user=`whoami`
 jobscript="jobscript.sh" #name of the jobscript written herein
 js=$jobscript     #abbr. for readabilty
-runscript="runscript.sh" #name of the runscript written herein
-rs=$runscript 
 
 
 ###########################
@@ -78,7 +76,7 @@ case "$cluster" in
 		scheduler="slurm"
 		oldpath="/home/chemcalc/gerbig/init/"
 		newxtbpath="/home/chemcalc/muellert/isaac"
-		newcrestpath="/home/chemcalc/muellert/isaac/xtb_6.2.3/bin"
+		newcrestpath="/home/chemcalc/muellert/isaac/xtb_6.3.pre2/bin"
 		;;
 	GOETHE)
 		scheduler="slurm"
@@ -94,7 +92,7 @@ esac
 }
 
 
-generate_jobscript () { # the jobscript contains all information needet by the schedular and starts the runscript
+generate_jobscript () { # the jobscript contains all information needed by the scheduler and the actual commands carried out after submission
 
 
 case "$cluster" in
@@ -173,26 +171,16 @@ case "$1" in
 
 esac
 
-
 }
 
-# runscript depr.
 
-#generate_runscript () { # the runscript "performs" the actual computations and manages tmp-files of the computations and the "clean-up"
-
-#rs=$runscript     #abbr. for readabilty
-
-#echo "#!/bin/bash" > $rs
-#echo "$program $options >> output.out" >> $rs
-
-#}
 
 write_js_body () {
 
 
 {
-echo ' tmp=`echo $PATH | sed -e 's@:$oldpath@@g'` '
-echo ' export PATH=$tmp '
+echo 'tmp=`echo $PATH | sed -e 's@:$oldpath@@g'` '
+echo 'export PATH=$tmp '
 echo ' '
 # setting up the paths to xtb and crest provided by me:
 echo -n "export PATH=$newxtbpath"
@@ -200,15 +188,43 @@ echo ':$PATH'
 echo -n "export PATH=$newcrestpath"
 echo ':$PATH'
 echo ' '
-# configutring the xtb parameters
+#configuring the xtb parameters
 
 echo "export MKL_NUM_THREADS=$ntasks "
 echo "export OMP_THREAD_LIMIT=$ntasks "
 echo "export OMP_NUM_THREADS=$ntasks,1 "
+echo 'export OMP_STACKSIZE=5G '
 echo ' '
+echo 'ulimit -s unlimited'
+echo ' '
+
 # the actual computation
 
-echo " $program $options >> output.out "
+echo 'wd=`pwd`'
+echo -n "mkdir /scratch/chemcalc/$USER/"
+echo '$SLURM_JOBID'
+echo -n "cd /scratch/chemcalc/$USER/"
+echo '$SLURM_JOBID'
+echo ' '
+echo 'cp $wd/* .'
+echo 'cp $wd/.constrains .'
+echo ' '
+echo  -n "$program $options >> " 
+echo '$wd/output.out '
+echo ''
+echo 'cp crest_best* $wd'
+echo 'cp crest_conformers* $wd'
+echo 'cp xtbopt* $wd'
+echo ' '
+echo 'tar -cf $SLURM_JOBID.tar *'
+echo 'cp *.tar $wd'
+echo ''
+
+
+
+
+
+
 
 } >> $js
 
@@ -313,6 +329,13 @@ case "$runtype" in
 		determine_cluster
 		generate_jobscript
 		submit_jobscript
+		;;
+	--ecrest|--Ecrest|-ec)
+		echo "expert mode:crest. jobscript will be wirtten submission and changes up to user"
+		program=crest
+		determine_cluster
+		generate_jobscript
+		echo "jobsript written. check it and submit with sbatch jobscript"
 		;;
 	--help|--Help|-h)
 		vim help_isaac.txt
