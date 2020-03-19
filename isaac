@@ -31,6 +31,15 @@ jobscript="jobscript.sh" #name of the jobscript written herein
 js=$jobscript     #abbr. for readabilty
 
 
+
+# used dirs of the user
+
+homedir=$HOME
+user=$USER
+
+grouppath=` echo $homedir | sed -e 's@/home/@@g' | sed -e 's@$user@@g' `
+
+
 ###########################
 #       Functions         #
 ###########################
@@ -48,6 +57,34 @@ fi
 
 }
 
+
+determine_account () {
+#sets the right account info for slurm
+# this includes the partion
+#
+
+
+group=`id -gn`
+
+case "$cluster" in
+	FUCHS) # partition is always fuchs, but account needs to be changed
+	case "$group" in 
+		chemcalc)	account="agschreiner" ;;
+		giessen)	account="giessen" ;;
+		*)		echo "determine_account: unknown case in FUCHS !" ; exit ;;
+	esac
+	;;
+	HALO) #
+	case "$group" in
+		ug|UG)		partition="UG" ;;
+		haw|HAW)	partition="HAW" ;;
+		prs|PRS)	partition="PRS" ;;
+		*)		echo "determine_account: unknown case in halo !" ; exit ;;
+	esac
+	;;
+esac
+
+}
 
 determine_cluster () {
 ### determination of the currently used cluster system
@@ -74,9 +111,9 @@ case "$cluster" in
 		;;
 	FUCHS)
 		scheduler="slurm"
-		oldpath="/home/chemcalc/gerbig/init/"
-		newxtbpath="/home/chemcalc/muellert/isaac"
-		newcrestpath="/home/chemcalc/muellert/isaac/xtb_6.3.pre2/bin"
+		oldpath=$INITPATH
+		newxtbpath="/home/fuchs/agschreiner/public/isaac/xtb_6.3.pre2/bin"
+		newcrestpath="/home/fuchs/agschreiner/public/isaac"
 		;;
 	GOETHE)
 		scheduler="slurm"
@@ -108,7 +145,7 @@ case "$cluster" in
 		write_js_body 
 		;;
 	HALO)
-		partion="UG"
+		determine_account HALO
 		ntasks=6
 		mem_per_cpu=1000
 
@@ -119,10 +156,10 @@ case "$cluster" in
 		partion="fuchs"
 		ntasks=20
 		mem_per_cpu=2000
-
+		determine_account fuchs
 		write_js_header slurm
 		echo "#SBATCH --extra-node-info=2:10:1">> $js
-		echo "#SBATCH --account=agschreiner" >> $js
+		echo "#SBATCH --account=$account" >> $js
 		write_js_body		
 		;;
 	*)
@@ -159,8 +196,8 @@ case "$1" in
 		} >> $js
 		;;
 	grid)
-		echo "you can read this beacaus teh grid engine is not implemeted yet" >> $rs
-		echo "write js header cannot work: grid engine not implemented yet"
+		echo "you can read this beacaus the grid engine is not implemeted yet" >> $rs
+		echo "write_js_header cannot work: grid engine not implemented yet"
 		exit
 		;;
 	*)
@@ -201,9 +238,9 @@ echo ' '
 # the actual computation
 
 echo 'wd=`pwd`'
-echo -n "mkdir /scratch/chemcalc/$USER/"
+echo -n "mkdir /scratch/$grouppath/"
 echo '$SLURM_JOBID'
-echo -n "cd /scratch/chemcalc/$USER/"
+echo -n "cd /scratch/$grouppath/"
 echo '$SLURM_JOBID'
 echo ' '
 echo 'cp $wd/* .'

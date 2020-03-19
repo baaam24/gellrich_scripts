@@ -18,6 +18,10 @@ isaac [time] [runtype] [options]
 	--xtb		submit a xtb computation to the scheduler
 	-x
 
+	--ecrest	writes th jobscribt for you but doesnt submit it
+	-e		enables to check it. Submit via: "sbatch jobscript.sh"
+
+
 [options]: options you would normaly give xtb or crest 
 
 examples:
