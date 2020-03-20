@@ -64,10 +64,9 @@ determine_account () {
 #
 
 
-group=`id -gn`
-
 case "$cluster" in
 	FUCHS) # partition is always fuchs, but account needs to be changed
+	group=`id -gn`
 	case "$group" in 
 		chemcalc)	account="agschreiner" ;;
 		giessen)	account="giessen" ;;
@@ -75,6 +74,7 @@ case "$cluster" in
 	esac
 	;;
 	HALO) #
+	group=`id -Gn | awk '{print $3}'`
 	case "$group" in
 		ug|UG)		partition="UG" ;;
 		haw|HAW)	partition="HAW" ;;
@@ -100,7 +100,7 @@ case "$cluster" in
 	HALO)
 		scheduler="slurm"
 		oldpath="/usr/local/bin/init"
-		newxtbpath="/home/tizian/isaac/xtb/bin"
+		newxtbpath="/home/tizian/isaac/xtb/xtb_6.3.pre2/bin"
 		newcrestpath="/home/tizian/isaac/crest"
 		;;
 	SKYLLA)
@@ -187,7 +187,7 @@ case "$1" in
 		echo "#SBATCH --cpus-per-task=1    "
 		echo "#SBATCH --mail-type=NONE  "
 		echo "#SBATCH --no-requeue      "  
-		echo "#SBATCH --partition=$partion  "
+		echo "#SBATCH --partition=$partition  "
 		echo "#SBATCH --ntasks=$ntasks  "
 		echo "#SBATCH --mem-per-cpu=$mem_per_cpu  "
 		echo "#SBATCH --time=$time  "
