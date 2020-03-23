@@ -153,7 +153,7 @@ case "$cluster" in
 		write_js_body		
 		;;
 	FUCHS)
-		partion="fuchs"
+		partition="fuchs"
 		ntasks=20
 		mem_per_cpu=2000
 		determine_account fuchs
