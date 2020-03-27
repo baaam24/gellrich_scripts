@@ -1,0 +1,25 @@
+This is the help file for: getxyz
+Syntax: getxyz [FILE] [INTEGER]
+Questions/Remarks: jama@oc.jlug.de
+
+Prints the [INTEGER] set of atomic coordinates found in [FILE] in xmol-format.
+
+EXAMPLEFILE:
+2
+ title1
+H 0.0 0.0 0.0
+H 0.0 0.0 0.72
+2
+ title2
+H 0.0 0.0 0.0
+H 0.0 0.0 0.74
+2
+ title3
+H 0.0 0.0 0.0
+H 0.0 0.0 0.76
+
+COMMAND: getXYZ EXAMPLEFILE 2
+
+OUTPUT:
+H 0.0 0.0 0.0
+H 0.0 0.0 0.74

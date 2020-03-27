@@ -7,9 +7,9 @@ function prepXYZ {
 #input: $FILE
 #output: $COORDS [raw coordinates]
 
-unset COORDS NEWFILE SUFFIX
-SUFFIX=$(echo $FILE | rev | cut -f1 -d'.' | rev)
-case $SUFFIX in 
+unset COORDS NEWFILE SUFFIXINPUTFILE
+SUFFIXINPUTFILE=$(echo $FILE | rev | cut -f1 -d'.' | rev)
+case $SUFFIXINPUTFILE in 
 	xyz)
 			COORDS=$(cat $FILE)
 	;;
@@ -75,8 +75,8 @@ done
 
 if [ -z "$NAME" ]; then
 	NAME=$(echo $INPUTFILE | rev | cut -f1 -d'/' | rev | cut -f1 -d'.')
-	SUFFIX=$(echo $OUTPUTFILE | rev | cut -f1 -d'.' | rev)
-	NAME=$(echo $NAME.$SUFFIX)
+	SUFFIXOUTPUTFILE=$(echo $OUTPUTFILE | rev | cut -f1 -d'.' | rev)
+	NAME=$(echo $NAME.$SUFFIXOUTPUTFILE)
 fi
 
 if [ "$SETDIR" = 1 ]; then 
@@ -88,6 +88,10 @@ FILE=$INPUTFILE; prepXYZ
 
 if [ ! -f $WORKDIR/$NAME ]; then cp $OUTPUTFILE $WORKDIR/$NAME; else echo "Error: $WORKDIR/$NAME already exists."; exit; fi
 echo -e "$COORDS\n" >> $WORKDIR/$NAME
+if [[ $SUFFIXOUTPUTFILE = inp ]] ; then ### ORCA FILE
+	sed -i "$"d $WORKDIR/$NAME
+	echo -e "*\n" >> $WORKDIR/$NAME
+fi 
 echo -e "$APPENDIX\n" >> $WORKDIR/$NAME
 
 

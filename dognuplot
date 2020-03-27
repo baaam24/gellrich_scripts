@@ -1,0 +1,53 @@
+#!/bin/bash
+# syntax: dognuplot FILE
+# gnuplot "FILE" using 1:2 with line
+# questions/remarks: jama@oc.jlug.de
+#
+
+while getopts ":h" OPTION; do      # read variables
+	  case $OPTION in
+		      h)
+			              cat $SCRIPTDIR/help_dognuplot.txt
+				              exit
+					              ;;
+						          \?)
+								  		echo "Invalid option: -$OPTARG" >&2
+										        cat $SCRIPTDIR/help_dognuplot.txt
+											        exit
+												    ;;
+												      esac
+											      done
+
+											      #### check if gnuplot is available
+											      if [[ -z $(command -v gnuplot) ]]; then
+												      	echo "gnuplot is unavailable. Aborting.";
+														exit
+													fi
+
+													FILE=$1
+													if [[ ! -f $FILE ]]; then
+															echo "Requested File '$FILE' does not exist. Aborting."
+																exit
+															fi
+															title=$(echo $FILE | rev | cut -f2 -d'.' | rev)
+
+															gnuplot -p <<- EOF
+unset key
+set xlabel "Steps"
+set ylabel "SCF energy in kcal/mol"
+set title "Relaxed PES scan ($title)"
+plot "$FILE" using 1:2 with line
+EOF
+
+gnuplot -p <<- EOF
+unset key
+set xlabel "Steps"
+set ylabel "SCF energy in kcal/mol"
+set title "Relaxed PES scan ($title)"
+set term png
+set output "$title.png"
+plot "$FILE" using 1:2 with line
+EOF
+
+
+

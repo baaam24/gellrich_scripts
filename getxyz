@@ -1,0 +1,45 @@
+#!/bin/bash
+# Prints into Shell a requested set of atomic coordinates within a series of merged XYZ-files in XMOL-format
+# Syntax: getxyz [FILE] [INTEGER]
+# questions/remarks: jama@oc.jlug.de
+#
+
+while getopts ":h" OPTION; do      # read variables
+	  case $OPTION in
+		      h)
+			              cat $SCRIPTDIR/help_getxyz.txt
+				              exit
+					              ;;
+						          \?)
+								  		echo "Invalid option: -$OPTARG" >&2
+										        cat $SCRIPTDIR/help_getxyz.txt
+											        exit
+												    ;;
+												      esac
+											      done
+
+											      unset xyzfile getnum numat totallines
+
+											      xyzfile=$1
+											      getnum=$2
+
+											      if [[ ! -f $xyzfile ]] || [[ ! $getnum -gt 0 ]]; then
+												      	echo -e "Wrong Syntax: getxyz [FILE] [INTEGER]\nAborting."; exit
+												fi
+
+												numat=$(head -1 $xyzfile)
+												firstline=3
+												endline=$((numat+2))
+												totallines=$(wc -l $xyzfile | awk '{print $1}')
+												numxyz=$((totallines/endline))
+
+												for (( i=0 ; i < $numxyz ; i++ )); do
+														xyzcoords[$i]=$(sed -n "$firstline","$endline"p $xyzfile)
+															firstline=$((firstline+2+numat))
+																endline=$((endline+2+numat))
+															done
+
+															helpgetnum=$((getnum-1))
+															echo "${xyzcoords[$helpgetnum]}"
+
+

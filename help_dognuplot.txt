@@ -1,0 +1,9 @@
+This is the help file for: dognuplot
+Prerequisite: gnuplot must be available
+Syntax: dognuplot [FILE]
+Questions/Remarks: jama@oc.jlug.de
+
+Plots 1:2 with line with fixed labeling and title
+Graphic is displayed and saved as PNG-file
+
+works best together with xtbscans (see 'doxtb')
