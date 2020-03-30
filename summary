@@ -219,19 +219,22 @@ then
 TEST=`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH`
 	if [ -z "$TEST" ]
 	then 
-	IMAG="0"
+		IMAG="-"
 	else 
-	IMAG=`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH | awk '{print $2}'`
+		IMAG=`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH | awk '{print $2}'`
 	fi
 fi
 
 if [ $PROGNAME = "ORCA" ]
 then
-
-	freqline=$(tac $FILEPATH | grep -n -i -m1 "FREQUENCIES" | cut -f1 -d':')
-	FREQSECTION=$(tac $FILEPATH | sed -n 1,"$freqline"p | tac)
-	IMAG=$(echo "$FREQSECTION" | grep -c  "imaginary mode")
-
+	TEST=`grep -i -m 1 "FREQUENCIES" $FILEPATH`
+	if [ -z "$TEST" ]; then 
+		IMAG="-"
+	else
+		freqline=$(tac $FILEPATH | grep -n -i -m1 "FREQUENCIES" | cut -f1 -d':')
+		FREQSECTION=$(tac $FILEPATH | sed -n 1,"$freqline"p | tac)
+		IMAG=$(echo "$FREQSECTION" | grep -c  "imaginary mode")
+	fi
 fi
 
 
