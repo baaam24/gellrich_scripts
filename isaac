@@ -238,7 +238,7 @@ echo ' '
 # the actual computation
 
 echo 'wd=`pwd`'
-echo -n "mkdir /scratch/$grouppath/"
+echo -n "mkdir -p /scratch/$grouppath/"
 echo '$SLURM_JOBID'
 echo -n "cd /scratch/$grouppath/"
 echo '$SLURM_JOBID'
