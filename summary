@@ -48,25 +48,36 @@ FILEPATHFORMATTED=`echo "$FILEPATH" | rev | cut -c -24 | rev`
 FULLPATH=$FILEPATH 
 }
 
-function ident_prog { # identify the programm (gaussian, orca, ...) that created this OUT file
-#orca:
-FILEHEAD=`head -3 $FILEPATH `
-IDENTORCA=`echo "$FILEHEAD"| grep -c "        * O   R   C   A *"`
-IDENTGAUSSIAN=`echo "$FILEHEAD"| grep -c " Entering Gaussian System, Link 0"`
+
+function ident_prog {
 
 PROGID=0
 PROGNAME="none"
 
-if [ "$IDENTORCA" = "0" ] & [ "$IDENTGAUSSIAN" = "1" ]
-	then
-	PROGNAME="Gaussian"
-fi 
+FILEHEAD=`head -5 $FILEPATH`
 
-if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
-	then
-	PROGNAME="ORCA"
-fi
+IDENTORCA=`echo "$FILEHEAD" | grep -c " * O   R   C   A *"`
+IDENTGAUSSIAN=`echo "$FILEHEAD" | grep -c " Entering Gaussian System, Link 0"`
+IDENTXTB=`echo "$FILEHEAD" | grep -c "    |                           x T B                           |    "`
+IDENTCREST=`echo "$FILEHEAD" | grep -c "       |                 C R E S T                  |"`
+
+IDENTSTRING=`echo "$IDENTORCA $IDENTGAUSSIAN $IDENTXTB $IDENTCREST" | sed -e 's@ @@g'` 
+
+case "$IDENTSTRING" in 
+	1000) PROGNAME="ORCA" ;;
+	0100) PROGNAME="Gaussian" ;;
+	0010) PROGNAME="xTB" ;;
+	0001) PROGNAME="crest" ;;
+	*) PROGNAME="unknown" ;;
+esac
+
+
+
+#PROGNAME="$IDENTSTRING"
+
 }
+
+
 
 function find_methode { # gives the used Method
 if [ $PROGNAME = "Gaussian" ]
@@ -126,25 +137,29 @@ COORDS_new=`printf '%-3s\t%-14s\t%-14s\t%-14s\n' $COORDS`
 
 function find_energ { 
 
-if [ $PROGNAME = "Gaussian" ] 
-then
-TEST=`grep -m 1 -c "SCF Done:  " $FILEPATH`
-	if [ "$TEST" != 0 ]
-	then
-	ENERG_EL=`tac $FILEPATH | grep -m 1 "SCF Done:  " | awk '{print $5}'`
-	fi
-fi
-
-if [ $PROGNAME = "ORCA" ]
-then
-TEST=`grep -m 1 -c "FINAL SINGLE POINT ENERGY" $FILEPATH`
-	if [ "$TEST" != 0 ]
-	then
-	ENERG_EL=`tac $FILEPATH | grep -m 1 "FINAL SINGLE POINT ENERGY" | awk '{print $5}'`
-	fi
-#	ENERG_EL=`tac $FILEPATH | grep -m 1 "FINAL SINGLE POINT ENERGY"  | awk '{print $5}'`
-fi
-
+case "$PROGNAME" in
+	Gaussian)
+		TEST=`grep -m 1 -c "SCF Done:  " $FILEPATH`
+		if [ "$TEST" != 0 ]
+			then
+			ENERG_EL=`tac $FILEPATH | grep -m 1 "SCF Done:  " | awk '{print $5}'`
+		fi
+	;;
+	ORCA)
+		TEST=`grep -m 1 -c "FINAL SINGLE POINT ENERGY" $FILEPATH`
+		if [ "$TEST" != 0 ]
+			then
+			ENERG_EL=`tac $FILEPATH | grep -m 1 "FINAL SINGLE POINT ENERGY" | awk '{print $5}'`
+		fi
+	#	ENERG_EL=`tac $FILEPATH | grep -m 1 "FINAL SINGLE POINT ENERGY"  | awk '{print $5}'`
+	;;
+	xTB)
+		ENERG_EL=`grep "         | TOTAL ENERGY" $FILEPATH | awk '{print $4}'`
+	;;
+	crest)
+		ENERG_EL=`tac $FILEPATH | grep -m 1 "E lowest       " | awk '{print $4}'`
+	;;
+esac
 }
 
 function find_ther_corr { # finds the themal corrections to electronic Energy
@@ -244,16 +259,27 @@ fi
 
 function find_NTerm {
 
-if [ $PROGNAME = "Gaussian" ]
-then
+case "$PROGNAME" in
+	Gaussian)
 	NTERM=`grep -c "Normal termination of Gaussian" $FILEPATH`
-fi
-
-if [ $PROGNAME = "ORCA" ]
-	then
+	;;
+	ORCA)
 	NTERM=`grep -c "ORCA TERMINATED NORMALLY" $FILEPATH`
+<<<<<<< HEAD
 fi
 
+=======
+	;;
+	xTB)
+	NTERM=`grep -c "finished run"  $FILEPATH `
+	;;
+	crest)
+	NTERM=`grep -c " CREST terminated normally." $FILEPATH`
+	NUMOFCONFORMERS=`grep "number of unique conformers for further calc" $FILEPATH | awk '{print $8}'`
+	NOTES+="confs_found:$NUMOFCONFORMERS"
+	;;
+esac
+>>>>>>> 2febef4b09fdb6c773c59d46f633fe286336320b
 
 }
 
@@ -279,29 +305,33 @@ fi
 
 function find_version {
 
-if [ $PROGNAME = "Gaussian" ]
-then
+case "$PROGNAME" in 
+	Gaussina)
 	RAW=`grep -m 1 -A 2 "Cite this work as:" $FILEPATH`
 	PROG=`echo $RAW | awk '{print $5 $6}' | sed 's/,//g'`
 	REV=`echo $RAW | awk '{print $8}' | sed 's/,//g'`
-fi
-
-if [ $PROGNAME = "ORCA" ]
-then
+	;;
+	ORCA)
 	RAW=`grep "Program Version" $FILEPATH`
 	REV=`echo $RAW | awk '{print $3}'`
 	PROG_RAW=`echo $REV | sed 's@\.@ @g' | awk '{print $1}'`
 	PROG=`echo " $PROGNAME $PROG_RAW "`
-	
-fi
+	;;
+	xTB)
+	PROG=`grep " xtb version" $FILEPATH  | awk '{print "xTB " $4}'`
+	;;	
+	crest)
+	PROG=`grep "Version" $FILEPATH  | awk '{print "crest" $2}'`
+	;;
+esac
 
 
 }
 
 function find_runtime {
 
-if [ "$PROGNAME" = "Gaussian" ]
-	then
+case "$PROGNAME" in
+	Gaussian)
 	TEMP=`tail -n 7 $FILEPATH `
 	RUNTIME=`echo "$TEMP" | grep "Elapsed time" | awk '{print $3":"$5":"$7":" $9}'`
 	
@@ -319,11 +349,8 @@ if [ "$PROGNAME" = "Gaussian" ]
 		JOBSTATE="unknown"
 		NOTES+="Job_running_or_crashed"
 	fi
-	
-fi
-
-if [ $PROGNAME = "ORCA" ]
-then
+	;;
+	ORCA)	
 	TEMP=`tail -n 7 $FILEPATH `
 	RUNTIME=`echo "$TEMP" | grep "TOTAL RUN TIME:" | awk '{print $4 ":" $6 ":" $8 ":" $10 "." $12}'`
 
@@ -341,8 +368,15 @@ then
 		JOBSTATE="unknown"
 		NOTES+="Job_running_or_crashed"
 	fi
-fi
+	;;
+	xTB)
+	RUNTIME=`grep -m 1 " wall-time:" $FILEPATH | awk '{print $3 ":" $5 ":" $7 ":" $9 }'`
+	;;
+	crest)
+	RUNTIME=`grep "Overall wall time" $FILEPATH | awk '{print $4 $5 $6}'`
+	;;
 
+esac
 }
 
 function find_Nimag_string { # MIN (if NT=2 & IMAG=0), TS (if NT=2 & IMAG=1), or ERROR 
@@ -377,6 +411,7 @@ IMAG="$NA"
 Gsolv="$NA"
 SOLVENT="$NA"
 Grotvib="$NA"
+NUMOFCONFORMERS="$NA"
 }
 
 function merge_data {
