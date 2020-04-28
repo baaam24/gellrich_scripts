@@ -216,12 +216,14 @@ function find_Nimag {
 
 if [ $PROGNAME = "Gaussian" ]
 then
-TEST=`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH`
+	TEST=`grep -i -m 1 "Frequencies" $FILEPATH`
+#TEST=`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH`
 	if [ -z "$TEST" ]
 	then 
 		IMAG="-"
-	else 
+	else
 		IMAG=`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH | awk '{print $2}'`
+		if [[ -z $IMAG ]] ; then IMAG=0 ; fi
 	fi
 fi
 
@@ -251,7 +253,6 @@ if [ $PROGNAME = "ORCA" ]
 	then
 	NTERM=`grep -c "ORCA TERMINATED NORMALLY" $FILEPATH`
 fi
-
 
 
 }
