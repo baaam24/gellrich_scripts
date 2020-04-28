@@ -217,7 +217,7 @@ function find_Nimag {
 if [ $PROGNAME = "Gaussian" ]
 then
 	TEST=`grep -i -m 1 "Frequencies" $FILEPATH`
-#TEST=`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH`
+	#TEST=`grep -i -m 1 "imaginary frequencies (negative Signs" $FILEPATH`
 	if [ -z "$TEST" ]
 	then 
 		IMAG="-"
