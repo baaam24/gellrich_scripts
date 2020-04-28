@@ -265,10 +265,10 @@ case "$PROGNAME" in
 	;;
 	ORCA)
 	NTERM=`grep -c "ORCA TERMINATED NORMALLY" $FILEPATH`
-<<<<<<< HEAD
-fi
+#<<<<<<< HEAD
+#fi
 
-=======
+#=======
 	;;
 	xTB)
 	NTERM=`grep -c "finished run"  $FILEPATH `
@@ -279,7 +279,7 @@ fi
 	NOTES+="confs_found:$NUMOFCONFORMERS"
 	;;
 esac
->>>>>>> 2febef4b09fdb6c773c59d46f633fe286336320b
+#>>>>>>> 2febef4b09fdb6c773c59d46f633fe286336320b
 
 }
 
