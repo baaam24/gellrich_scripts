@@ -1,0 +1,137 @@
+#!/bin/bash
+#
+# 
+#
+
+
+#input: $crestconformers
+#output: $coords[n]] beginning with n=0
+function extract-xyz-from-file {
+
+	#periodicity=$(head -1 $crestconformers | awk '{print $1}')
+	#periodicity=$((periodicity+2)) 
+	maxline=$(wc -l $crestconformers | awk '{print $1}')
+	checkvar=1
+	lineNUMAT=1
+	k=0
+
+	while [[ $checkvar -gt 0 ]] 
+	do
+		## NUMAT of n-th coordinates: 1 + (n-1) * periodicity
+		## start of n-th coordinates: 3 + (n-1) * periodicity
+		## end of n-th coordinates: n * periodicity
+		#	k=$((n-1))
+		#	lineNUMAT=$(echo "1+($n-1)*$periodicity" | bc -l)
+			if [[ $lineNUMAT -ge $maxline ]]; then
+						checkvar=-1
+							else
+										NUMAT=$(sed -n "$lineNUMAT"p $crestconformers | awk '{print $1}')
+												linestart=$((lineNUMAT+2))
+													#	lineend=$((n*periodicity))
+															lineend=$((linestart+NUMAT-1))
+																	coords[$k]=$(sed -n "$linestart","$lineend"p $crestconformers)
+																		fi
+																			lineNUMAT=$((lineend+1))
+																				k=$((k+1))
+																			done
+																			echo "Found ${#coords[@]} xyz-coordinates"
+																		}
+
+																		#input: $coords[n], $INPUTFILE, $nproc, $crestconformers
+																		function create-multiple-job-input {
+
+																			for (( k=0 ; k < ${#coords[@]} ; k++ )); do
+	cat > TEMPHEAD <<?
+! B97-3c Grid5 NoFinalGrid Opt TightSCF
+%scf
+Guess Hueckel
+end
+
+?
+#echo "bugfix: TEMPHEAD: "$TEMPHEAD""
+
+#	INPUTBASE[$k]=%base'"'opt-crest"$k"_b97-3c'"'
+INPUTBASE[$k]=%base'"'opt-${crestconformers/.xyz}_"$k"_b97-3c'"'
+
+
+	cat > TEMPTECH <<?
+%MaxCore 2000
+%pal nprocs=$nproc
+end
+
+?
+
+	cat > TEMPCOORDS <<?
+*xyz 0 1
+${coords[$k]}
+*
+
+?
+
+	ADDJOB='$new_job'
+
+		cat TEMPHEAD >> $INPUTFILE
+			echo "${INPUTBASE[$k]}" >> $INPUTFILE
+				if (( k==0 )) ; then cat TEMPTECH >> $INPUTFILE ; fi
+					cat TEMPCOORDS >> $INPUTFILE
+						echo -e "$ADDJOB" >> $INPUTFILE
+							rm TEMPHEAD TEMPTECH TEMPCOORDS
+						done
+						sed -i "$"d $INPUTFILE
+
+						echo "Created $INPUTFILE containing ${#coords[@]} Optimizations at B97-3c level"
+						echo "... using $nproc processors"
+
+					}
+
+					inputarr=($*)
+					crestconformers=crest_conformers.xyz
+					inputcrestconformers=$1
+					INPUTFILE=$2
+					if [[ ! -f $inputcrestconformers ]] && [[ ! -f $crestconformers ]] ; then
+							echo "No Input File. Aborting."
+								exit
+							fi
+
+							if [[ -f $inputcrestconformers ]]; then
+									crestconformers=$inputcrestconformers
+								fi
+
+								if [[ -z $2 ]]; then 
+										INPUTFILE=crest2dft_b97-3c.inp
+									fi
+									if [[ -f $INPUTFILE ]] ; then
+											echo "$INPUTFILE already exists. Change the name of the Input-File. Aborting."
+												exit
+											fi
+
+											nproc=$(echo ${inputarr[@]} | tr -s ' ' '\n' | grep -E '^-n[0-9]+' | sed 's/-n//')
+											if [[ -z $nproc ]] ; then nproc=4 ; fi
+
+											while getopts "n:h" OPTION; do
+												        case $OPTION in
+																h) echo "Flag under construction."
+																			;;
+																			        n)	nproc=$OPTARG
+																								if ! [[ "$nproc" =~ ^[0-9]+$ ]]; then
+																													echo "Invalid format for '-n': Number of processors must be an Integer."
+																																	echo "Aborting."
+																																					exit
+																																								fi
+																																								         ;;
+																																									 		\?) echo "Invalid option: -$OPTARG"; exit
+																																												        ;;
+																																													        esac
+																																													done
+
+
+																																													echo "Reading CREST-conformers: $crestconformers"
+																																													extract-xyz-from-file
+																																													for (( i=0 ; i < ${#coords[@]} ; i++ )) ; do
+																																															echo "${coords[$i]}" >> ${crestconformers/.xyz}_$i.xyz
+																																														done
+																																														echo "... saved in ${crestconformers/.xyz}_[i].xyz (i=0,...)" 
+																																														create-multiple-job-input
+
+
+

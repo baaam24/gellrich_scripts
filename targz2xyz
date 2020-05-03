@@ -1,0 +1,69 @@
+#!/bin/bash
+#
+# 
+#
+
+
+### Input = tar.gz file
+input=$1
+checkinput=$(echo $input | rev | cut -f1-2 -d'.' | rev)
+if [[ ! -f $input ]] ; then echo "Input File does not exist. Aborting."; exit; fi
+if ! [[ $checkinput = "tar.gz" ]] ; then echo "Invalid Input format. Aborting."; exit; fi
+
+
+### create temporary random directory
+i=1
+while [ $i -gt 0 ]; do
+		randomdir=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13 ; echo '')
+			if [[ ! -d $randomdir ]]; then i=-1; fi
+		done
+		mkdir $randomdir
+		cp $input $randomdir
+		cd $randomdir
+
+		################## WORKING IN TEMPORARY RANDOM DIRECTORY CONTAINING THE INPUT FILE (.tar.gz)
+		tar -xzf $input
+		OUTFILE=$(ls | grep .out)
+		if [[ ! -f $OUTFILE ]] ; then echo "$input does not contain an .out-file. Aborting."; exit; fi
+		NTERM=$(grep -c "ORCA TERMINATED NORMALLY" $OUTFILE)
+		if [[ $NTERM -ne 1 ]] ; then echo "WARNING!!! $OUTFILE did not terminated normally! Check subsequent Output carefully!"; fi 
+		BASE=($(grep %base $OUTFILE | awk '{print $NF}' | cut -f2 -d'"')) ### BASE = name of single jobs in $OUTFILE
+
+		###### get optimized coordinates and final energies of every single optimization job
+		for (( i=0 ; i < ${#BASE[@]} ; i++ )); do
+				TRJ[$i]=${BASE[$i]}_trj.xyz	### This File contains coordinates + final energies for every opimization step
+					helpvar=$(head -1 ${TRJ[$i]} | awk '{print $1}')
+						helpvar=$((helpvar+2))
+							COORDS[$i]=$(tac ${TRJ[$i]} | head -"$helpvar" | tac)
+								ENERGYau[$i]=$(echo "${COORDS[$i]}" | sed -n 2p | awk '{print $NF}')
+									echo "$i ${ENERGYau[$i]}" >> TEMP-EnergyIndex ## helpfile to sort
+										TEMPCOORDFILE[$i]=tempcoords-${TRJ[$i]}.xyz 
+											echo "${COORDS[$i]}" >> ${TEMPCOORDFILE[$i]}
+												sed -i '2s/.*/REPLACESTRING/' ${TEMPCOORDFILE[$i]}
+											done
+
+											minenergy=$(echo ${ENERGYau[@]} | tr -s ' ' '\n' | sort -g | head -1)
+											energyindex=($(cat TEMP-EnergyIndex | sort -k2 -g | awk '{print $1}'))
+											rm TEMP-EnergyIndex
+											for (( i=0 ; i < ${#ENERGYau[@]} ; i++ )); do
+													Erelkcal[$i]=$(echo "(${ENERGYau[$i]}-$minenergy)*627.5095" | sed 's/--/+/g' | bc -l | xargs printf "%.*f\n" 2)
+														sed -i "2s/REPLACESTRING/ ${Erelkcal[$i]} ${BASE[$i]}/" ${TEMPCOORDFILE[$i]}
+															#cat ${TEMPCOORDFILE[$i]} >> FINALRESULTS.xyz
+														done
+
+														for i in ${energyindex[@]}; do
+																cat ${TEMPCOORDFILE[$i]} >> ${OUTFILE/.out}.xyz
+																	echo -e "${BASE[$i]}\t${ENERGYau[$i]}\t${Erelkcal[$i]}" >> ${OUTFILE/.out}.csv
+																done
+
+																#################DONE
+
+																########### LEAVE TEMPORARY WORKING DIRECTORY AND REMOVE IT
+																mv ${OUTFILE/.out}.xyz ../
+																mv ${OUTFILE/.out}.csv ../
+																cd ../
+																rm -r $randomdir
+
+
+
+

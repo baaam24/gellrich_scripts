@@ -60,6 +60,7 @@ while getopts "hi:o:a:n:Dd:" OPTION; do
 					OUTPUTFILE=$NEWOUTPUTFILE
 				fi
 			fi
+			SUFFIXOUTPUTFILE=$(echo $OUTPUTFILE | rev | cut -f1 -d'.' | rev)
 		;;
 		a) APPENDIX=$OPTARG
 		;;
@@ -75,7 +76,7 @@ done
 
 if [ -z "$NAME" ]; then
 	NAME=$(echo $INPUTFILE | rev | cut -f1 -d'/' | rev | cut -f1 -d'.')
-	SUFFIXOUTPUTFILE=$(echo $OUTPUTFILE | rev | cut -f1 -d'.' | rev)
+#	SUFFIXOUTPUTFILE=$(echo $OUTPUTFILE | rev | cut -f1 -d'.' | rev)
 	NAME=$(echo $NAME.$SUFFIXOUTPUTFILE)
 fi
 
