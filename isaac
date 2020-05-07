@@ -309,18 +309,30 @@ esac
 ###########################
 
 
-## startup:  checking for disruptive files, check inputformat
+## startup: 
 
-#check for leftover files of prev run:
-# turned of during development
+# 1. Parse usere input:
 
-for i in $jobscript $runscript output.out ; do
- does_file_exist "$i" 
-done
 
 input=$@
 
 time=`echo $input | awk '{print $1}'`
+runtype=`echo $input | awk '{print $2}'`
+options=`echo "$input" |  cut  -d " " -f3-`
+
+
+
+
+# check if help is called:
+
+case "$time" in
+	--help|--Help|-h)
+		cat ~/gellrich_scripts/help_isaac.txt
+		exit
+		;;
+esac
+
+# no help wanted: check for correct time format
 
 if [[ "$time" =~ [0-9][0-9]:[0-9][0-9]:[0-9][0-9] ]]
 then
@@ -330,13 +342,13 @@ else
 		exit
 fi
 
+# check for leftover files from previos runs
 
-# after complete startup the runtype and options are parsed 
+for i in $jobscript $runscript output.out ; do
+ does_file_exist "$i" 
+done
 
 
-runtype=`echo $input | awk '{print $2}'`
-
-options=`echo "$input" |  cut  -d " " -f3-`
 
 # based on the chosen runtype the main scripts does its job:
 # e.g. write scripts, submitting them or try to reserve nodes
@@ -374,16 +386,12 @@ case "$runtype" in
 		generate_jobscript
 		echo "jobsript written. check it and submit with sbatch jobscript"
 		;;
-	--help|--Help|-h)
-		vim help_isaac.txt
-		exit
-		;;
 	*)
 		echo "unknown runtype specified:"
 		echo "please check your input carefully and try again"
 		echo "try isaac --help for more help"
 		exit
-		,,
+		;;
 esac
 
 
