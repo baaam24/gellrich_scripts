@@ -294,8 +294,8 @@ fi
 
 if [ $PROGNAME = "ORCA" ]
 	then
-	CHARGE=`grep -m 1 "Total Charge" $FILEPATH | awk '{print $5}'`
-	MULITPL=`grep -m 1 "Multiplicity" $FILEPATH | awk '{print $5}'`
+	CHARGE=`grep -m 1 "Total Charge" $FILEPATH | awk '{print $NF}'`
+	MULITPL=`grep -m 1 "Multiplicity" $FILEPATH | awk '{print $NF}'`
 fi
 
 
