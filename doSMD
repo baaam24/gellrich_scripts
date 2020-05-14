@@ -2,211 +2,335 @@
 #
 # computation/calculation of free energy of solvation at SMD-PBE0/def2-SVP
 #
+# Syntax: doSMD [FILE] (calc) -s SOLVENT -p SOFTWARE
 
-function ident_prog { # identify the programm (gaussian, orca, ...) that created this OUT file
-#orca:
-FILEHEAD=`head -3 ${LISTARR[$fi]} `
-IDENTORCA=`echo "$FILEHEAD"| grep -c "        * O   R   C   A *"`
-IDENTGAUSSIAN=`echo "$FILEHEAD"| grep -c " Entering Gaussian System, Link 0"`
 
-unset PROGNAME
+### requires $FILEPATH
+### output: $PROGNAME = ORCA, Gaussian, xTB, crest 
+function ident_prog {
+	unset PROGNAME
+	PROGID=0
+	FILEHEAD=`head -5 $FILEPATH`
 
-if [ "$IDENTORCA" = "0" ] & [ "$IDENTGAUSSIAN" = "1" ]
-	then
-	PROGNAME="Gaussian"
-fi 
+	IDENTORCA=`echo "$FILEHEAD" | grep -c " * O   R   C   A *"`
+	IDENTGAUSSIAN=`echo "$FILEHEAD" | grep -c " Entering Gaussian System, Link 0"`
+	IDENTXTB=`echo "$FILEHEAD" | grep -c "    |                           x T B                           |    "`
+	IDENTCREST=`echo "$FILEHEAD" | grep -c "       |                 C R E S T                  |"`
 
-if [ "$IDENTORCA" = "1" ] & [ "$IDENTGAUSSIAN" = "0" ]
-	then
-	PROGNAME="ORCA"
-fi
-}
+	IDENTSTRING=`echo "$IDENTORCA $IDENTGAUSSIAN $IDENTXTB $IDENTCREST" | sed -e 's@ @@g'`
 
-function find_NTerm {
-unset NTERM
-case $PROGNAME in 
-	Gaussian) NTERM=`grep -c "Normal termination of Gaussian" ${LISTARR[$fi]}`
+	case "$IDENTSTRING" in
+		        1000) PROGNAME="ORCA" ;;
+			        0100) PROGNAME="Gaussian" ;;
+				        0010) PROGNAME="xTB" ;;
+					        0001) PROGNAME="crest" ;;
+						        *) PROGNAME="unknown" ;;
+						esac
+						#PROGNAME="$IDENTSTRING"
+
+					}
+
+					### requires $PROGNAME $FILEPATH
+					### output: $NTERM
+					function find_NTerm {
+						unset NTERM
+						case "$PROGNAME" in
+							        Gaussian)
+									        NTERM=`grep -c "Normal termination of Gaussian" $FILEPATH`
+										        ;;
+											        ORCA)
+													        NTERM=`grep -c "ORCA TERMINATED NORMALLY" $FILEPATH`
+														        ;;
+															        xTB)
+																	        NTERM=`grep -c "finished run"  $FILEPATH `
+																		        ;;
+																			        crest)
+																					        NTERM=`grep -c " CREST terminated normally." $FILEPATH`
+																						#        NUMOFCONFORMERS=`grep "number of unique conformers for further calc" $FILEPATH | awk '{print $8}'`
+																						#        NOTES+="confs_found:$NUMOFCONFORMERS"
+																						        ;;
+																					esac
+
+																				}
+
+																				### requires $PROGNAME, $FILEPATH
+																				### output: $CHARGE, $MULTIPL
+																				function find_charge-multipl {
+																					unset CHARGE MULTIPL
+																					if [ $PROGNAME = "Gaussian" ]
+																						        then
+																								        CHARGE=`grep -m 1 "Charge =" $FILEPATH | awk '{print $3}'`
+																									        MULTIPL=`grep -m 1 "Charge =" $FILEPATH | awk '{print $6}'`
+
+																									fi
+
+																									if [ $PROGNAME = "ORCA" ]
+																										        then
+																												        CHARGE=`grep -m 1 "Total Charge" $FILEPATH | awk '{print $NF}'`
+																													        MULTIPL=`grep -m 1 "Multiplicity" $FILEPATH | awk '{print $NF}'`
+																													fi
+																												}
+
+																												### requires $FILEPATH, out2xyz script, $PROGNAME
+																												### output: $RAWCOORDS
+																												function get-raw-coords {
+																													if [[ -z $(command -v out2xyz) ]]; then
+																															echo "script out2xyz is unavailable. Aborting.";
+																																exit
+																															fi
+
+																															unset RAWCOORDS
+																															out2xyz $FILEPATH
+																															xyzfile=${FILEPATH/.out}.xyz
+
+																															unset NUMAT
+																															case $PROGNAME in 
+																																	ORCA)
+																																				NUMAT=$(grep -m1 "Number of atoms" $FILEPATH | awk '{print $NF}')
+																																					;;
+																																						Gaussian)
+																																									NUMAT=$(grep -m1 "NAtoms" $FILEPATH | awk '{print $2}')
+																																										;;
+																																								esac
+																																								if ! [[ $NUMAT =~ ^[0-9]+$ ]]; then echo "Number of Atoms is not a positive Integer. There is something wrong. Aborting."; rm $xyzfile; return 1; fi
+
+
+																																								CHECK=$(tail -1 $xyzfile | awk '{print NF}')
+																																								while [[ $CHECK -ne 4 ]]; do
+																																										sed -i "$"d $xyzfile
+																																											CHECK=$(tail -1 $xyzfile | awk '{print NF}')
+																																										done
+																																										RAWCOORDS=$(tail -"$NUMAT" $xyzfile)
+																																										rm $xyzfile
+
+																																									}
+
+																																									### requires $CHARGE $MULTIPL $RAWCOORDS $SMDINPFORMAT $SOLVENT $NAME $numcores
+																																									### output: $SMDINP (=SMD-Input-File)
+																																									function prep-smd-input {
+
+																																										if [[ -z $CHARGE ]] ; then echo "Charge is missing. Aborting."; return 126; fi
+																																										if [[ -z $MULTIPL ]]; then echo "Multiplicity is missing. Aborting."; return 126; fi
+																																										if [[ -z $RAWCOORDS ]] ; then echo "Coordinates are missing. Aborting."; return 126; fi 
+																																										if [[ -z $PROGNAME ]] ; then echo "Programe is not specified. Aborting."; return 126; fi 
+																																										if [[ -z $SOLVENT ]] ; then echo "Solvent is missing. Aborting."; return 126; fi
+																																										if [[ -z $numcores ]] ; then echo "Number of cores are not specified. Aborting." ; return 126; fi
+
+
+																																										case $SMDINPFORMAT in 
+																																												orca)
+																																														
+																																															SMDINP=$(echo $NAME'_'SMD'_'$SOLVENT.inp)
+																																																	if [[ -f $SMDINP ]] ; then echo "$SMDINP already exists. Aborting." ; return 126; fi 
+																																																			cat > $SMDINP <<?
+! PBE0 def2-SVP TightSCF Grid4 FinalGrid5
+
+%base"gas-spe"
+%MaxCore 2000
+%pal nprocs=$numcores
+end
+
+* xyz $CHARGE $MULTIPL
+$RAWCOORDS
+*
+
+?
+		echo '$new_job' >> $SMDINP
+				cat >> $SMDINP <<?
+
+! PBE0 def2-SVP TightSCF Grid4 FinalGrid5 CPCM(toluene)
+
+%cpcm
+smd true
+SMDsolvent "$SOLVENT"
+end
+
+%base"smd_spe"
+
+* xyz $CHARGE $MULTIPL
+$RAWCOORDS
+*
+
+?
+
+echo "Created Orca-Input-File: $SMDINP"
 	;;
-	ORCA) NTERM=`grep -c "ORCA TERMINATED NORMALLY" ${LISTARR[$fi]}`
-	;;
-esac
-}
-
-function comp_solv { #prepare Input-File for SMD-computation
-NAME=$(echo ${LISTARR[$fi]} | rev | cut -f2-100 -d'.' | cut -f1 -d'/' | rev)
-INPUT=$(echo $NAME'_'SMD'_'$SOLVENT.dat)
-
-if [ ! -f $INPUT ]; then
-out2xyz ${LISTARR[$fi]}
-XYZFILE=$(echo ${LISTARR[$fi]} | sed 's/.out/.xyz/')
-
-#########################################
-cat > $INPUT <<!
+		gaussian)
+					SMDINP=$(echo $NAME'_'SMD'_'$SOLVENT.dat)
+							if [[ -f $SMDINP ]] ; then echo "$SMDINP already exists. Aborting." ; return 126; fi
+									
+									
+									cat > $SMDINP <<!
 %chk=$NAME-$SOLVENT.chk
-%NProcShared=12
+%NProcShared=$numcores
 %mem=10000mb
 #p PBE1PBE/Def2SVP SP SCF=Tight Int(Grid=Ultrafine) MaxDisk=100gb
 
  SPE computation for Gsolv computation
 
-!
-#########################################
-
-CHARGE=$(grep -m1 Multiplicity ${LISTARR[$fi]} | head -1 | awk '{print $3}')
-MULT=$(grep -m1 Multiplicity ${LISTARR[$fi]} | head -1 | awk '{print $6}')
-NATOMS=$(grep -m1 NAtoms ${LISTARR[$fi]} | awk '{print $2}')
-
-echo "$CHARGE $MULT" >> $INPUT
-
-tail -"$NATOMS" $XYZFILE >> $INPUT
-
-#########################################
-cat >> $INPUT <<!
+$CHARGE $MULTIPL
+$RAWCOORDS
 
 --Link1--
 
 %chk=$NAME-$SOLVENT.chk
-%NProcShared=12
+%NProcShared=$numcores
 %mem=10000mb
 #p PBE1PBE/Def2SVP SP Geom=AllCheck Guess=Read SCF=Tight Int(Grid=Ultrafine) MaxDisk=100gb SCRF=(SMD,Solvent=$SOLVENT)
 
 
 !
-#########################################
-
-rm $XYZFILE
-
-else
-
-echo "$INPUT already exists."; exit
-fi
-}
-
-function check_computation { #CHECKCOMP=1 if CSM-computation terminated correctly
-unset numPCM numSCF 
-
-CHECKCOMP=0
-ident_prog
-find_NTerm
-numPCM=$(grep -c "Polarizable Continuum Model" ${LISTARR[$fi]})
-numSCF=$(grep -c "SCF Done:" ${LISTARR[$fi]})
-
-### current Gaussian-implementation
-if [[ ( $numPCM -eq 1 && $numSCF = "2" ) && ( $PROGNAME = "Gaussian" && $NTERM = 2 ) ]] ; then
-	CHECKCOMP=1
-fi
-
-if [  $CHECKCOMP != 1 ]; then
-	echo "There is something wrong with ${LISTARR[$fi]}."
-	exit
-fi
+		
+	echo "Created Gaussian-Input-File: $SMDINP"	
+		;;
+esac
 
 }
 
-function calc_solv { #calculate G_solv including standard state correction (c = 1 mol/L, T = 298.15 K)
-unset ENERGYGAS ENERGYSOLV Gsolv Gsolv_au CHKFILE CHKPATH
-
-### bugfix
-#echo "File: ${LISTARR[$fi]} , numPCM: $numPCM , numSCF: $numSCF , PROGNAME: $PROGNAME , NTERM: $NTERM"	
-	
-### current Gaussian-implementation
-	### remove Checkpoint-File
-	CHKFILE=$(grep -m1 "checkpoint file" ${LISTARR[$fi]} | awk '{print $6}' | cut -d'"' -f2)
-	CHKPATH=$(echo ${LISTARR[$fi]} | rev | cut -f2-100 -d'/' | rev)
-	CHKFILE="$CHKPATH"/"$CHKFILE"
-	if [ -f "$CHKFILE" ]; then rm $CHKFILE; fi
-				
+### requires $PROGNAME 
+### output: $G_solv_au, $G_solv_sscorr_au, $G_solv_sscorr_kcal
+function calc-Gsolv {
 	#SSCORR=$(echo "(8.3144622*298.15*3.80879881*0.0000001)*(l(8.3144622*(1000/101325)*298.15))" | bc -l)
 	SSCORR=.00301880430536378077
-	ENERGYGAS=$(cat ${LISTARR[$fi]} | grep -m1 "SCF Done:" | awk '{print $5}')
-	ENERGYSOLV=$(tac ${LISTARR[$fi]} | grep -m1 "SCF Done:" | awk '{print $5}')
-	Gsolv_au=$(echo $ENERGYSOLV-$ENERGYGAS+$SSCORR | sed 's/--/+/g' | bc -l | xargs printf "%.*f\n" 6)
-	Gsolv=$(echo $Gsolv_au*627.5095 | bc -l | xargs printf "%.*f\n" 1)
-}
+	unset G_solv_au G_solv_sscorr_au G_solv_sscorr_kcal
 
-function find_solvent { #finds SOLVENT of the CSM-computation 
-unset SOLVENT
-SOLVENT=$(grep -A30 "Polarizable Continuum Model" ${LISTARR[$fi]} | grep -m1 Solvent | awk '{print $3}' | cut -d',' -f1)
-}
+	find_NTerm
+	case $PROGNAME in 
+			ORCA)
+						if [[ $NTERM -ne 1 ]] ; then echo "$FILEPATH did not terminated normally. Aborting." ; return 1; fi 
+								if [[ $(grep -c "Total Energy after SMD CDS correction" $FILEPATH) -eq 1 && $(grep -c "FINAL SINGLE POINT ENERGY" $FILEPATH) -eq 2 ]]; then
+												G_solv_au=$(tac $FILEPATH | grep "FINAL SINGLE POINT ENERGY" | awk '{print $NF}' | paste -s -d '-' | sed 's/--/+/g' | bc -l)
+														fi
+															;;
+																Gaussian)
+																			if [[ $NTERM -ne 2 ]] ; then echo "$FILEPATH did not terminated normally. Aborting." ; return 1; fi 
+																					if [[ $(grep -c "Polarizable Continuum Model" $FILEPATH) -eq 1 && $(grep -c "SCF Done:" $FILEPATH) -eq 2 ]]; then
+																									G_solv_au=$(tac $FILEPATH | grep "SCF Done:" | awk '{print $5}' | paste -s -d '-' | sed 's/--/+/g' | bc -l)
+																											fi
+																												;;
+																										esac
 
-function calc_Gtrans_corr {
+																										if [[ -z $G_solv_au ]]; then return 126; fi 
+																										G_solv_sscorr_au=$(echo "("$G_solv_au"+$SSCORR)" | bc -l | xargs printf "%.*f\n" 6)
+																										G_solv_sscorr_kcal=$(echo "("$G_solv_au"+$SSCORR)*627.5095" | bc -l | xargs printf "%.*f\n" 2)
 
-#### dG* = RT * ln {V/V*}) = RT * ln {kB*T/pV*}
-#### approx: dG* = 0.6 * ln {40626 / VOLUME IN ANG^3}
-#### additive G-correction
-#### ${LISTARR[$fi]} (=SMD computation)
+																									}
+
+																									### requires $FILEPATH $PROGNAME
+																									### output: $SOLVENT
+																									function find-solvent {
+																										unset SOLVENT
+
+																										case $PROGNAME in 
+																												ORCA)
+																															SOLVENT=$(grep -A30 "SOLVATION MODEL" $FILEPATH | grep -m1 "Solvent:" | awk '{print $NF}' | tr [:upper:] [:lower:])
+																																;;
+																																	Gaussian)
+																																				SOLVENT=$(grep -A30 "Polarizable Continuum Model" $FILEPATH | grep -m1 Solvent | awk '{print $3}' | cut -d',' -f1 | tr [:upper:] [:lower:])
+																																					;;
+																																			esac
+																																		}
+
+																																		#################### DEFAULT VARIABLES
+																																		SCRIPTDIR=`dirname $(readlink -f ${0})`
+																																		SOLVENT=benzene
+																																		SMDINPFORMAT=orca
+																																		numcores=4
+																																		unset LISTARR KEYCALC BREVITY
+																																		############################################################### 
 
 
-GASCONST='1.98720413479923518164*(10^-3)'; ### R in kcal/mol*K
-TEMPERATURE=298.15; ### T in K
-BOLTZCONST=1.3806488; ### k_B in 10^-23 J/K
-PRESSURE=101325; ### p in Pa 
-CAVITYVOLUME_Ang=$(grep "Cavity volume" ${LISTARR[$fi]} | awk '{print $5}') ### V* in Ang
-CAVITYVOLUME=$(echo $CAVITYVOLUME_Ang*10^-7 | bc -l) ### V* in 10^-7 m^3
 
-Gcorr_trans=$(echo "$GASCONST*$TEMPERATURE*l((($BOLTZCONST*$TEMPERATURE)/($PRESSURE*$CAVITYVOLUME)))" | bc -l)
-Gcorr_trans_au=$(echo "$Gcorr_trans/627.5095" | bc -l | xargs printf "%.*f\n" 6)
-Gcorr_trans=$(echo $Gcorr_trans | xargs printf "%.*f\n" 1)
+																																		#################### INPUT SECTION
+																																		#totinput=($*)
+																																		#KEYCALC=$(echo totinput | tr -s ' ' '\n' | grep -i -w "calc") ### key to calculate G_solv, default 'comp' specifies to prepare input-file for SMD-comp
+																																		INPUTFILE=$1
+																																		if [[ $INPUTFILE = "all" ]] ; then
+																																				LISTARR=($(find . -maxdepth 1 ! -name 'slurm*.out' -name '*.out' -type f))
+																																			elif [[ -f $INPUTFILE ]]; then 
+																																					LISTARR=($INPUTFILE)
+																																				fi
 
-#echo "bugfix: Gcorr_trans: $Gcorr_trans ; Gcorr_trans_au: $Gcorr_trans_au"
+																																				if [[ -z $LISTARR ]]; then echo "Missing Input-File. Aborting."; exit; fi
+																																				#echo "Found ${#LISTARR[@]} Input-File(s): ${LISTARR[@]}"
+																																				############################################################### 
 
-}
+																																				#################### OPTIONAL ARGUMENTS
+																																				OPTIND=2
+																																				while getopts "s:p:T:cb" OPTION; do
+																																						case $OPTION in
+																																								s)	SOLVENT=$(echo $OPTARG | tr [:upper:] [:lower:]) ### for SMD-Input-File, default: benzene
+																																											echo "Specified Solvent: $SOLVENT"
+																																												;;
+																																													p)	SMDINPFORMAT=$(echo $OPTARG | tr [:upper:] [:lower:]) ### for generation of SMD-Input-File, default: ORCA
+																																																echo "Specified SMD-format: $SMDINPFORMAT"
+																																																	;;
+																																																		T)	numcores=$OPTARG
+																																																					if ! [[ $numcores =~ ^-?[0-9]+$ ]]; then echo "Specified number of cores is not an Integer. Aborting."; exit; fi
+																																																							echo "Requested $numcores Cores"
+																																																								;;
+																																																									c)	KEYCALC=1
+																																																											;;
+																																																												b) BREVITY=1
+																																																														;;
+																																																													#	h)	vim $SCRIPTDIR/help_doSMD.txt; exit
+																																																														#	;;
+																																																															\?) echo "Invalid option: -$OPTARG"; exit
+																																																																	;;
+																																																																		esac
+																																																																	done
+																																																																	###############################################################
+
+																																																																	for (( i=0 ; i < ${#LISTARR[@]} ; i++ )) ; do
+																																																																			FILEPATH=${LISTARR[$i]}
+																																																																				NAME=$(echo $FILEPATH | rev | cut -f2-100 -d'.' | rev)
+																																																																					ident_prog
+																																																																						if [[ -z $KEYCALC ]]; then #### prepares SMD-Input
+																																																																									find_charge-multipl
+																																																																											get-raw-coords
+																																																																													prep-smd-input
+																																																																														else 
+																																																																																	calc-Gsolv
+																																																																																			if ! [[ $(echo $?) -eq 126 ]]; then 
+																																																																																							find-solvent
+																																																																																										if [[ -z $BREVITY ]]; then 
+																																																																																															echo "G_solv including standard state correction ($SOLVENT, T = 298.15 K, c = 1 mol/L)"
+																																																																																																			echo "${LISTARR[$i]}: $G_solv_sscorr_kcal kcal/mol [ $G_solv_sscorr_au a.u. ]"
+																																																																																																						else
+																																																																																																											echo "$G_solv_sscorr_au $SOLVENT $FILEPATH"
+																																																																																																														fi
+																																																																																																																fi
+																																																																																																																	fi
+																																																																																																																done
+
+																																																																																																																#if [[ -z $KEYCALC ]]; then #### prepares SMD-Input
+																																																																																																																#		for (( i=0 ; i < ${#LISTARR[@]} ; i++ )) ; do
+																																																																																																																#			FILEPATH=${LISTARR[$i]}
+																																																																																																																#			NAME=$(echo $FILEPATH | rev | cut -f2-100 -d'.' | rev)
+																																																																																																																#			ident_prog
+																																																																																																																#			find_charge-multipl
+																																																																																																																#			get-raw-coords
+																																																																																																																#			prep-smd-input
+																																																																																																																#		done
+																																																																																																																#else	## calculates G_solv
+																																																																																																																#		for (( i=0 ; i < ${#LISTARR[@]} ; i++ )) ; do
+																																																																																																																#			FILEPATH=${LISTARR[$i]}
+																																																																																																																#			NAME=$(echo $FILEPATH | rev | cut -f2-100 -d'.' | rev)
+																																																																																																																#			ident_prog
+																																																																																																																#			calc-Gsolv
+																																																																																																																#			find-solvent
+																																																																																																																#			echo "G_solv including standard state correction ($SOLVENT, T = 298.15 K, c = 1 mol/L)"
+																																																																																																																#			echo "${LISTARR[$i]}: $G_solv_sscorr_kcal kcal/mol [ $G_solv_sscorr_au a.u. ]"
+																																																																																																																#			
+																																																																																																																#		done
+																																																																																																																#	echo "Calc-Mode not yet implemented."
+																																																																																																																#fi
 
 
-unset SOLVENT LIST LISTARR
 
-SCRIPTDIR=`dirname $(readlink -f ${0})`
-LIST=`find . -maxdepth 1 ! -name 'slurm*.out' -name '*.out' -type f`
-LISTARR=($LIST)
-BREVITY=0
 
-while getopts "f:s:ctbh" OPTION; do
-	case $OPTION in
-	f)	LIST=$OPTARG
-		LISTARR=($LIST)
-		for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
-		do
-			if [ ! -f ${LISTARR[@]} ]; then echo "Error: File(s) do(es) not exist."; exit; fi
-		done
-	;;
-	s)	SOLVENT=$OPTARG; SOLVENT=$(echo $SOLVENT | tr [:upper:] [:lower:])
-		echo "Apply SMD model for $SOLVENT"
-		for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
-		do
-			comp_solv
-		done
-	;;
-	c)	for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
-		do
-			check_computation
-			find_solvent
-			calc_solv
-			case $BREVITY in
-			0)	echo "G_solv including standard state correction ($SOLVENT, T = 298.15 K, c = 1 mol/L)"
-				echo "${LISTARR[$fi]}: $Gsolv kcal/mol [ $Gsolv_au a.u. ]"
-			;;
-			1)	echo "$Gsolv_au $SOLVENT"
-			;;
-			esac
 
-		done
-	;;
-	t)	for (( fi=0 ; fi < ${#LISTARR[@]} ; fi++ ))
-		do
-			check_computation
-			find_solvent
-			calc_Gtrans_corr
-			echo "Additive G-correction for solution-phase translational entropy ($SOLVENT, T = $TEMPERATURE K, p = $PRESSURE Pa)"
-			echo "${LISTARR[$fi]}: $Gcorr_trans kcal/mol [ $Gcorr_trans_au a.u. ]"
-		done
-	;;
-	b) BREVITY=1
-	;;
-	h)	vim $SCRIPTDIR/help_doSMD.txt; exit
-	;;
-	\?) echo "Invalid option: -$OPTARG"; exit
-	;;
-	esac
-done
+
+
 
 
