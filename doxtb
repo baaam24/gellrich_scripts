@@ -1,0 +1,307 @@
+#!/bin/bash
+#
+# 
+#
+
+###input: $xyzfile
+###output: $xyzfileformat (xmol if true)
+function check_xyz_format {
+	unset CHECK linenumber xyzfileformat CHECKARR
+	bkfile=bk-xyzfile.xyz
+	cp $xyzfile $bkfile
+
+	#### formatting
+	CHECK=$(tail -1 $xyzfile | awk '{print NF}')
+	while [[ $CHECK -ne 4 ]]; do
+			sed -i "$"d $xyzfile
+				CHECK=$(tail -1 $xyzfile | awk '{print NF}')
+			done
+			sed -i 's/^[ \t]*//' $xyzfile ### remove all leading spaces
+
+			CHECKARR=($(cat $xyzfile | awk '{print NF}' | sort -u))
+			if [[ ${#CHECKARR[@]} -eq 1 ]] && [[ ${CHECKARR[@]} -eq 4 ]]; then 
+					xyzfileformat=xyz
+						rm $bkfile
+							return
+						fi
+
+						CHECK=$(head -1 $xyzfile | tr -d '\r')
+						re='^([0-9])+\s*$'
+						if ! [[ $CHECK =~ $re ]]; then	### first line does not contain number of scanatoms --> no xmol
+								cp $bkfile $xyzfile
+									rm $bkfile
+										return 1
+									fi
+									((CHECK+=2))
+									linenumber=$(wc -l $xyzfile | awk '{print $1}')
+									if ! [[ "$CHECK" = "$linenumber" ]]; then ### no xmol format
+											cp $bkfile $xyzfile
+												rm $bkfile
+													return 1
+												fi
+												re='^[a-zA-Z]+(\s+[-]?[0-9]*\.[0-9]*){3}(\s+[a-zA-Z]+(\s+[-]?[0-9]*\.[0-9]*){3})*\s*$' #### required format (case-insensitive Element Symbol followed by coordinates)
+												CHECK=$(sed -n 3,"$linenumber"p $xyzfile)
+												if ! [[ $CHECK =~ $re ]]; then	### Format does not correspond to [Element Symbol] [x] [y] [z]
+														cp $bkfile $xyzfile
+															rm $bkfile
+																return 128
+															fi
+															xyzfileformat=xmol
+															rm $bkfile
+														}
+
+														#input $xyzfile (xyz-format)
+														#output $xyzfile (xmol-format)
+														function xyz2xmol {
+															unset linenumber CHECK maxlines checkline AtomicNumber ElementSymbol
+
+															if [[ -z $(command -v convertPTE) ]]; then
+																	echo "convertPTE is unavailable. Cannot execute function 'xyz2xmol'.";
+																		return
+																	fi
+
+																	CHECK=$(cat $xyzfile | awk '{print $1}')
+																	re='^[0-9]+(\s[0-9]+)*$'
+																	if [[ $CHECK =~ $re ]]; then
+																			echo "Converting xyz-format to xmol-format ..."
+																				maxlines=$(wc -l $xyzfile | awk '{print $1}')
+																					for (( i=1 ; i<=$maxlines ; i++ )); do
+																								AtomicNumber=$(sed -n "$i"p $xyzfile | awk '{print $1}')
+																										ElementSymbol=$(convertPTE -S $AtomicNumber)
+																												sed -i ""$i"s/"$AtomicNumber"/"$ElementSymbol"/" $xyzfile
+																													done
+																												fi
+
+																												linenumber=$(wc -l $xyzfile | awk '{print $1}')
+																												echo -e "$linenumber\n" | cat - $xyzfile > temp && mv temp $xyzfile
+
+
+																											}
+
+																											#input: $command, $xyzfile
+																											#output: $scaninputfile $executepattern $outputfile
+																											function create-xtb-scaninput {
+																													unset stepnumber scanend scanstart scanatoms scanparameter scaninputfile executepattern outputfile scanindex scaninput scansec1 scansec2
+																														
+																														scaninputfile=xtbscan_"$name".inp
+																															scanindex=$(echo $constrain | tr -cd : | wc -c); ((scanindex+=1)) ## scanindex=reference between $constrain and $scan block in $scaninputfile
+																																scaninput=($(echo -e $command))
+																																#	echo "Read scan-input: ${scaninput[@]}"
+																																	
+																																	for (( i=0 ; i < ${#scaninput[@]} ; i++ )); do
+																																				stepnumber[$i]=$(echo ${scaninput[$i]} | rev | cut -f1 -d',' | rev)
+																																						scanend[$i]=$(echo ${scaninput[$i]} | rev | cut -f2 -d',' | rev)
+																																								scanstart[$i]=$(echo ${scaninput[$i]} | rev | cut -f3 -d',' | rev)
+																																										scanatoms[$i]=$(echo ${scaninput[$i]} | rev | cut -f4-7 -d',' | rev)
+																																												case $(echo ${scanatoms[$i]} | tr -cd , | wc -c) in
+																																																1)	scanparameter[$i]=distance
+																																																				;;
+																																																							2)	scanparameter[$i]=angle
+																																																											;;
+																																																														3)	scanparameter[$i]=dihedral
+																																																																		;;
+																																																																				esac
+																																																																						scansec1[$i]=$(echo " ${scanparameter[$i]}: ${scanatoms[$i]},${scanstart[$i]}"'\n')			### section within $constrain of $scaninputfile
+																																																																								scansec2[$i]=$(echo " $scanindex: ${scanstart[$i]},${scanend[$i]},${stepnumber[$i]}"'\n') 	### section within $scan of $scaninputfile
+																																																																										((scanindex+=1))
+																																																																											done
+
+																																																																												## generate input-file for scan
+																																																																													if [[ -z $forceconstant ]]; then forceconstant=0.05; fi
+																																																																														
+																																																																														echo -e '$'"constrain\n force constant=$forceconstant\n $constrain" > $scaninputfile
+																																																																															echo -e "${scansec1[@]}" >> $scaninputfile
+																																																																																sed -i "$"d $scaninputfile
+																																																																																	echo -e '$'"scan" >> $scaninputfile
+																																																																																			if [[ ${#scaninput[@]} -gt 1 ]]; then
+																																																																																								checkstepnumber=($(echo ${stepnumber[@]} | sed "s= =\\n=g" | sort -u))
+																																																																																												if [[ ${#checkstepnumber[@]} -eq 1 ]]; then 
+																																																																																																		echo -e "mode=concerted" >> $scaninputfile;
+																																																																																																						else
+																																																																																																												echo -e "mode=sequential" >> $scaninputfile;
+																																																																																																																fi
+																																																																																																																		fi
+																																																																																																																			echo -e "${scansec2[@]}" >> $scaninputfile
+																																																																																																																				sed -i "$"d $scaninputfile
+																																																																																																																					echo -e '$'"scanend" >> $scaninputfile
+
+																																																																																																																						executepattern="$xyzfile --opt --input $scaninputfile"
+																																																																																																																							outputfile=xtbscan_"$name".out
+																																																																																																																								# syntax: xtb $executepattern | tee $outputfile | grep -w "CYCLE\|step [0-9]*"
+																																																																																																																									
+																																																																																																																							}
+
+																																																																																																																							#input: $analyzescanfile
+																																																																																																																							#output: data-xtbscan-"$name".txt
+																																																																																																																							function analyze-xtbscanlog {
+
+																																																																																																																								if [[ -z $name ]] || [[ ! -f $analyzescanfile ]]; then echo "Could not analyze $analyzescanfile"; return; fi
+																																																																																																																								unset energy minenergy 
+
+																																																																																																																								energy=($(grep "SCF" $analyzescanfile | awk '{print $NF}'))
+																																																																																																																								minenergy=$(grep "SCF" $analyzescanfile | awk '{print $NF}' | sort | tail -1)
+																																																																																																																								echo "Analyze Energies obtained from scan..."
+																																																																																																																								if [ -f data-xtbscan-"$name".txt ] ; then rm data-xtbscan-"$name".txt ; fi 
+																																																																																																																								for (( i=0 ; i < ${#energy[@]} ; i++ )) ; do
+																																																																																																																										k=$(echo $i+1 | bc -l)
+																																																																																																																											energy[$i]=$(echo "(${energy[$i]}-$minenergy)*627.5095" | sed 's/--/+/g' | bc -l | xargs printf "%.*f\n" 2)
+																																																																																																																												echo $k ${energy[$i]} >> data-xtbscan-"$name".txt
+																																																																																																																											done
+
+																																																																																																																											TEST=$(grep -m1 "[0-9] SCF" $analyzescanfile)
+																																																																																																																											if [[ -z $TEST ]]; then 		
+																																																																																																																													linesubst=($(grep -n "SCF" $analyzescanfile | awk '{print $1}' | cut -f1 -d':'))
+																																																																																																																														for (( i=0 ; i < ${#linesubst[@]} ; i++ )) ; do
+																																																																																																																																	k=$(echo $i+1 | bc -l)
+																																																																																																																																			sed -i ""${linesubst[$i]}"s/SCF/"$k" SCF/" $analyzescanfile
+																																																																																																																																				done
+																																																																																																																																			fi
+																																																																																																																																		}
+
+																																																																																																																																		unset input xyzfile name solvent solvcommand NIMAG finish command executepattern outputfile scaninputfile constrain plot
+																																																																																																																																		################################## START HERE
+
+																																																																																																																																		#### check if xtb is available
+																																																																																																																																		if [[ -z $(command -v xtb) ]]; then
+																																																																																																																																				echo "xtb is unavailable. Aborting.";
+																																																																																																																																					exit
+																																																																																																																																				fi
+
+																																																																																																																																				#### read input string
+																																																																																																																																				input=($*)
+																																																																																																																																				echo "Read Input: ${input[@]}"
+
+																																																																																																																																				##### check if plot-variable is set
+																																																																																																																																				plot=$(echo ${input[@]} | tr -s ' ' '\n' | grep -i -w "plot")
+
+
+																																																																																																																																				####### identify xyz-input file
+																																																																																																																																				xyzfile=$(echo ${input[@]} | tr -s ' ' '\n' | grep ".xyz")
+																																																																																																																																				if [[ ! -f $xyzfile ]]; then echo "Could not find Input-file."; exit; fi
+																																																																																																																																				name=$(echo $xyzfile | rev | cut -f2-10 -d'.' | rev)
+																																																																																																																																				if [[ $xyzfile = xtbscan* ]]; then
+																																																																																																																																						name=$(echo $name | sed "s/xtbscan[-_]//")
+																																																																																																																																							analyzescanfile=$xyzfile
+																																																																																																																																								analyze-xtbscanlog
+																																																																																																																																									if [[ -f data-xtbscan-"$name".txt ]] && [[ ! -z $(command -v dognuplot) ]] && [[ ! -z $plot ]] ; then dognuplot data-xtbscan-"$name".txt; fi
+																																																																																																																																										exit
+																																																																																																																																									fi
+																																																																																																																																									check_xyz_format
+																																																																																																																																									if [[ $xyzfileformat != xyz ]] && [[ $xyzfileformat != xmol ]]; then echo -e "Invalid File-format.\nRequired XMOL-format: [Element Symbol] [x] [y] [z]\nAborting."; exit; fi
+																																																																																																																																									if [[ $xyzfileformat == xyz ]]; then xyz2xmol; fi
+																																																																																																																																									echo "Found atomic coordinates in $xyzfile"
+
+
+																																																																																																																																									###### check if implicit solvation is requested
+																																																																																																																																									solvent=$(echo ${input[@]} | tr -s ' ' '\n' | grep -i "solvent" | cut -f2 -d'=')
+																																																																																																																																									if [[ ! -z $solvent ]] ; then
+																																																																																																																																											solvcommand=$(echo "-g $solvent")
+																																																																																																																																												name=$(echo "$name"_gbsa-"$solvent")
+																																																																																																																																											else
+																																																																																																																																													solvcommand=''
+																																																																																																																																												fi
+
+																																																																																																																																												###### check if additional constrains are requested
+																																																																																																																																												constrain=$(echo ${input[@]} | tr -s ' ' '\n' | grep -i constrain | cut -f2 -d'=' | sed 's/:/: /g' | sed 's=\\n=\\n =g')
+
+
+																																																																																																																																												##### identify command (ohess, opt, scan, ...)
+																																																																																																																																												## priority scan > opt > ohess 
+																																																																																																																																												## add-ons: solvent, constrain
+
+																																																																																																																																												command=$(echo ${input[@]} | tr -s ' ' '\n' | grep -i scan | cut -f2 -d'=') ### check if 'scan=scan=a,b,c,d,scanstart,scanend,stepnumber'
+																																																																																																																																												if [[ ! -z $command ]] || [[ ! -z $constrain ]]; then
+																																																																																																																																														forceconstant=$(echo ${input[@]} | tr -s ' ' '\n' | grep -i "forceconstant" | cut -f2 -d'=')
+																																																																																																																																															create-xtb-scaninput
+																																																																																																																																														fi
+
+																																																																																																																																														if [[ -z $executepattern ]]; then 
+																																																																																																																																																command=$(echo ${input[@]} | tr -s ' ' '\n' | grep -i -w ohess)	### check if 'ohess' (exact, case-insensitive) is requested (-> additional freq computation)
+																																																																																																																																																	if [[ ! -z $command ]]; then 
+																																																																																																																																																				executepattern="$xyzfile --ohess"
+																																																																																																																																																						outputfile=xtbohess_"$name".out
+																																																																																																																																																								# syntax: xtb $executepattern | tee $outputfile | grep -w "CYCLE\|step [0-9]*"
+																																																																																																																																																									else
+																																																																																																																																																												executepattern="$xyzfile --opt"
+																																																																																																																																																														outputfile=xtbopt_"$name".out
+																																																																																																																																																																# syntax: xtb $executepattern | tee $outputfile | grep -w "CYCLE\|step [0-9]*"
+																																																																																																																																																																	fi
+																																																																																																																																																																fi
+																																																																																																																																																																#echo "execution pattern is $executepattern"
+
+																																																																																																																																																																######### run xtb
+
+																																																																																																																																																																#### useful maschine settings (see xtb --help)
+																																																																																																																																																																export MKL_NUM_THREADS=4
+																																																																																																																																																																export OMP_THREAD_LIMIT=4
+																																																																																																																																																																export OMP_NUM_THREADS=4,1
+																																																																																																																																																																export OMP_STACKSIZE=500m
+
+																																																																																																																																																																### create random temp-directory
+																																																																																																																																																																i=1
+																																																																																																																																																																while [ $i -gt 0 ]; do
+																																																																																																																																																																		dir=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 13 ; echo '')
+																																																																																																																																																																			dir=temp-xtb-$name-$dir
+																																																																																																																																																																				if [[ ! -d $dir ]]; then i=-1; fi
+																																																																																																																																																																			done
+
+																																																																																																																																																																			mkdir $dir
+																																																																																																																																																																			cp $xyzfile $dir
+																																																																																																																																																																			if [[ -f $scaninputfile ]]; then cp $scaninputfile $dir ; fi
+																																																																																																																																																																			cd $dir
+																																																																																																																																																																				
+																																																																																																																																																																			####### execution of xtb
+																																																																																																																																																																			if [[ ! -z $solvcommand ]]; then executepattern="$executepattern $solvcommand"; fi
+																																																																																																																																																																			echo "Execute xtb $executepattern"
+																																																																																																																																																																			xtb $executepattern | tee $outputfile | grep -w "CYCLE\|CONVERGED\|Numerical Hessian\|step [0-9]*"
+																																																																																																																																																																				
+																																																																																																																																																																			if [[ -f xtbopt.xyz ]]; then mv xtbopt.xyz ../xtbopt_"$name".xyz; fi
+																																																																																																																																																																			if [[ -f xtbscan.log ]]; then
+																																																																																																																																																																					analyzescanfile=xtbscan.log
+																																																																																																																																																																						analyze-xtbscanlog
+																																																																																																																																																																						#	energy=($(grep "SCF" xtbscan.log | awk '{print $NF}'))
+																																																																																																																																																																						#	minenergy=$(grep "SCF" xtbscan.log | awk '{print $NF}' | sort | tail -1)
+																																																																																																																																																																						#	echo "Analyze Energies obtained from scan..."
+																																																																																																																																																																						#	if [ -f ../data-xtbscan-"$name".txt ] ; then rm ../data-xtbscan-"$name".txt ; fi 
+																																																																																																																																																																						#	for (( i=0 ; i < ${#energy[@]} ; i++ )) ; do
+																																																																																																																																																																						#		k=$(echo $i+1 | bc -l)
+																																																																																																																																																																						#		energy[$i]=$(echo "(${energy[$i]}-$minenergy)*627.5095" | sed 's/--/+/g' | bc -l | xargs printf "%.*f\n" 2)
+																																																																																																																																																																						#		echo $k ${energy[$i]} >> ../data-xtbscan-"$name".txt
+																																																																																																																																																																						#	done
+																																																																																																																																																																								
+																																																																																																																																																																						#	linesubst=($(grep -n "SCF" xtbscan.log | awk '{print $1}' | cut -f1 -d':'))
+																																																																																																																																																																						#	for (( i=0 ; i < ${#linesubst[@]} ; i++ )) ; do
+																																																																																																																																																																						#		k=$(echo $i+1 | bc -l)
+																																																																																																																																																																						#		sed -i ""${linesubst[$i]}"s/SCF/"$k" SCF/" xtbscan.log
+																																																																																																																																																																						#	done
+																																																																																																																																																																							mv data-xtbscan-"$name".txt ../
+																																																																																																																																																																								mv xtbscan.log ../xtbscan_"$name".xyz
+																																																																																																																																																																							fi 
+																																																																																																																																																																							mv $outputfile ../
+																																																																																																																																																																							cd ..
+																																																																																																																																																																							rm -r $dir
+
+																																																																																																																																																																							finish=$(grep "finished run" $outputfile)
+																																																																																																																																																																							if [[ ! -z $finish ]]; then 
+																																																																																																																																																																									NIMAG=$(grep -a -m1 "imaginary freq." $outputfile | awk '{print $5}')
+																																																																																																																																																																										if [[ -z $NIMAG ]]; then
+																																																																																																																																																																													echo "Successfully optimized structure: xtbopt_"$name".xyz"		## imaginary frequencies flag not detected
+																																																																																																																																																																													#		cat xtbopt_"$name".xyz
+																																																																																																																																																																															if [[ -f data-xtbscan-"$name".txt ]] && [[ ! -z $(command -v dognuplot) ]] && [[ ! -z $plot ]] ; then dognuplot data-xtbscan-"$name".txt; fi
+																																																																																																																																																																																elif [[ $NIMAG -eq 0 ]]; then
+																																																																																																																																																																																			echo "Optimized minimum structure: xtbopt_"$name".xyz"			## 0 imaginary frequencies = minimum
+																																																																																																																																																																																			#		cat xtbopt_"$name".xyz
+																																																																																																																																																																																				elif [[ $NIMAG -eq 1 ]]; then
+																																																																																																																																																																																							echo "Optimized TS structure: xtbopt_"$name".xyz"				## 1 imaginary frequency = TS
+																																																																																																																																																																																							#		cat xtbopt_"$name".xyz
+																																																																																																																																																																																								else 
+																																																																																																																																																																																											echo -e "Unphysical number of imaginary frequencies ($NIMAG)\nOptimized structure: xtb_"$name".xyz"
+																																																																																																																																																																																											#		cat xtbopt_"$name".xyz
+																																																																																																																																																																																												fi
+																																																																																																																																																																																											else
+																																																																																																																																																																																													echo "Please check your XTB run carefully. There is something wrong."
+																																																																																																																																																																																												fi
+
+
+
+
