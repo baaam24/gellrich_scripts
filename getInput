@@ -27,6 +27,13 @@ while [[ $CHECKSTART -ne 4 ]]; do
 	CHECKSTART=$(echo "$COORDS" | head -1 | awk '{print NF}')
 done
 
+re='^(\s*[-]?[0-9]*\.[0-9]*){3}$'
+CHECKSTART=$(echo "$COORDS" | head -1 | awk '{print $2 " " $3 " " $4}')
+while ! [[ $CHECKSTART =~ $re ]]; do
+	COORDS=$(echo "$COORDS" | sed 1d)
+	CHECKSTART=$(echo "$COORDS" | head -1 | awk '{print $2 " " $3 " " $4}')
+done
+
 CHECKEND=$(echo "$COORDS" | tail -1 | awk '{print NF}')
 while [[ $CHECKEND -ne 4 ]]; do
 	COORDS=$(echo "$COORDS" | sed "$"d)
