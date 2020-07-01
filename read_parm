@@ -9,7 +9,12 @@ File=$1
 Param=$2
 Param_2=`echo "$Param" | sed 's/[-_]/ /g' `
 
+
 pi=`echo "scale=15; 4*a(1)" | bc -l `
+
+
+
+
 
 function arccos () {
     scale=15
@@ -28,9 +33,11 @@ function arccos () {
 
 function find_XYZ () { # find the XYZ-Coordinates of the structure
 
-NATOMS=`grep -m 1 "NAtoms=" $File | awk '{print $2}' | sed -e 's/ //g'`
-COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $File ` #read the coordinates used for the frequency computation
-COORDS=`echo "$COORDS_RAW" | sed -e 1D | sed -e 's/,0,/ /g' | sed -e 's/,-/ -/g' | sed -e 's/,/ /g' ` # some nice formatting
+#NATOMS=`grep -m 1 "NAtoms=" $File | awk '{print $2}' | sed -e 's/ //g'`
+#COORDS_RAW=`grep -i -A $NATOMS "Redundant internal coordinates found in file." $File ` #read the coordinates used for the frequency computation
+#COORDS=`echo "$COORDS_RAW" | sed -e 1D | sed -e 's/,0,/ /g' | sed -e 's/,-/ -/g' | sed -e 's/,/ /g' ` # some nice formatting
+
+COORDS=`cat $File | sed -e '1,2d'`
 
 }
 
@@ -42,6 +49,10 @@ function calc_dist () {
 # reads the wanted line from the coordinates
 COORS_A=`sed -n ${N_A}p <<< "$COORDS"`
 COORS_B=`sed -n ${N_B}p <<< "$COORDS"`
+
+
+#echo "$COORS_A"
+#echo "$COORS_B"
 
 #extract expicit X, Y and Z coordinates of Atom A
 A_TYPE=`echo "$COORS_A | awk '{print $1}'"`
@@ -156,10 +167,10 @@ COORS_B=`sed -n ${N_B}p <<< "$COORDS"`
 COORS_C=`sed -n ${N_C}p <<< "$COORDS"`
 COORS_D=`sed -n ${N_D}p <<< "$COORDS"`
 
-echo "$COORS_A"
-echo "$COORS_B"
-echo "$COORS_C"
-echo "$COORS_D"
+# echo "$COORS_A"
+# echo "$COORS_B"
+# echo "$COORS_C"
+# echo "$COORS_D"
 
 #extract expicit X, Y and Z coordinates of Atom A
 A_TYPE=`echo "$COORS_A | awk '{print $1}'"`
@@ -206,7 +217,7 @@ N1_X=`echo "$BA_Y * $BC_Z - $BA_Z * $BC_Y" | bc`
 N1_Y=`echo "$BA_Z * $BC_X - $BA_X * $BC_Z" | bc`
 N1_Z=`echo "$BA_X * $BC_Y - $BA_Y * $BC_X" | bc`
 
-echo "$N1_X $N1_Y $N1_Z"
+# echo "$N1_X $N1_Y $N1_Z"
 
 
 
@@ -229,25 +240,24 @@ N2_Y=`echo "$CB_Z * $CD_X - $CB_X * $CD_Z" | bc `
 N2_Z=`echo "$CB_X * $CD_Y - $CB_Y * $CD_X" | bc `
 
 
-echo "$N2_X $N2_Y $N2_Z"
-
-
+# echo "$N2_X $N2_Y $N2_Z"
 
 
 
 #skalarprodukt der normalenvektoren
-echo "$N1_X * $N2_X   +   $N1_Y * $N2_Y    +   $N1_Z * $N2_Z"
+# echo "$N1_X * $N2_X   +   $N1_Y * $N2_Y    +   $N1_Z * $N2_Z"
+
 N1_N2=`echo "$N1_X * $N2_X   +   $N1_Y * $N2_Y    +   $N1_Z * $N2_Z" | bc `
 
 
 
 
 #betrag der vektoren
-echo "sqrt( $N1_X^2 + $N1_Y^2 + $N1_Z^2 )"
+# echo "sqrt( $N1_X^2 + $N1_Y^2 + $N1_Z^2 )"
 len_N1=`echo "sqrt( $N1_X^2 + $N1_Y^2 + $N1_Z^2 )" | bc`
 
 
-echo "sqrt( $N2_X^2 + $N2_Y^2 + $N2_Z^2 )"
+# echo "sqrt( $N2_X^2 + $N2_Y^2 + $N2_Z^2 )"
 len_N2=`echo "sqrt( $N2_X^2 + $N2_Y^2 + $N2_Z^2 )" | bc`
 
 
@@ -258,47 +268,151 @@ len_N2=`echo "sqrt( $N2_X^2 + $N2_Y^2 + $N2_Z^2 )" | bc`
 # phi = cos   |---------------|
 #             \  |N1| * |N2|  /
 
-echo "  $N1_N2 / ( $len_N1 * $len_N2 ) " 
+# echo "  $N1_N2 / ( $len_N1 * $len_N2 ) " 
 bruch=`echo "  $N1_N2 / ( $len_N1 * $len_N2 ) " | bc -l `
 
 # umrechnung des Winkels
 dihed_rad=`arccos $bruch`
 dihed_deg=`echo " (360 / (2 * $pi)) * $dihed_rad " | bc -l `
 
+ 
+ echo " $dihed_deg"
 
-echo " bruch $bruch"
-echo " diehed: $dihed_deg"
+
+ # # referenz ebene:
+ # #C-D-A
+ # #CD haben wir schon
+ # # DA fehlt
+ 
+# DA_X=`echo "$A_X - $D_X "| bc`
+# DA_Y=`echo "$A_Y - $D_Y "| bc`
+# DA_Z=`echo "$A_Z - $D_Z "| bc`
+ 
+ 
+ # echo "debug -DA fertig "
+# # normalenvektore der Referenzebene 
+ 
+# N3_X=`echo "$DA_Y * $CD_Z - $DA_Z * $CD_Y" | bc`
+# N3_Y=`echo "$DA_Z * $CD_X - $DA_X * $CD_Z" | bc`
+# N3_Z=`echo "$DA_X * $CD_Y - $DA_Y * $CD_X" | bc`
+ 
+ 
+ # # betrag des normalenvektors d. Referenzebene
+ 
+ # len_N3=`echo "sqrt( $N3_X^2 + $N3_Y^2 + $N3_Z^2 )" | bc`
+ 
+ 
+ 
+ # N1_N3=`echo "$N1_X * $N3_X   +   $N1_Y * $N3_Y    +   $N1_Z * $N3_Z" | bc `
+ 
+ # bruch_alpha=`echo "  $N1_N3 / ( $len_N1 * $len_N3 ) " | bc -l `
+
+# N2_N3=`echo "$N2_X * $N3_X   +   $N2_Y * $N3_Y    +   $N2_Z * $N2_Z" | bc `
+ 
+ # bruch_beta=`echo "  $N2_N3 / ( $len_N2 * $len_N3 ) " | bc -l `
+
+# dihed_rad_alpha=`arccos $bruch_alpha`
+# dihed_deg_alpha=`echo " (360 / (2 * $pi)) * $dihed_rad_alpha " | bc -l `
+
+# dihed_rad_beta=`arccos $bruch_beta`
+# dihed_deg_beta=`echo " (360 / (2 * $pi)) * $dihed_rad_beta " | bc -l `
+
+# echo "alpha $dihed_deg_alpha"
+# echo "beta $dihed_deg_beta"
+
+# # test
+# echo "debug - test beginnt "
+
+
+# if (( $(echo "$dihed_deg_alpha > $dihed_deg_beta" |bc -l) )); then
+        # echo " alpha ist größer"
+    # else
+        # echo " betha ist größer"
+# fi
+
 
 
 }
 
 
 
-echo "$File $Param $Param_2"
+function calc_tors () {
+
+# echo "torsion test"
+
+COORS_A=`sed -n ${N_A}p <<< "$COORDS"`
+COORS_B=`sed -n ${N_B}p <<< "$COORDS"`
+COORS_C=`sed -n ${N_C}p <<< "$COORDS"`
+COORS_D=`sed -n ${N_D}p <<< "$COORDS"`
+
+
+echo "4       " >  tmp.xyz
+echo "        " >> tmp.xyz
+echo "$COORS_A" >> tmp.xyz
+echo "$COORS_B" >> tmp.xyz
+echo "$COORS_C" >> tmp.xyz
+echo "$COORS_D" >> tmp.xyz
+
+
+ winkel_roh=`obabel -i xyz tmp.xyz -o gzmat | grep "d4=" | awk '{print $2}'`   
+
+#echo "$winkel_roh"
+
+bla=180.0
+
+if (( $(echo "$winkel_roh > $bla" |bc -l) )); then
+        # echo " zu groß: drehe ..."
+         tors=`echo $winkel_roh - 360 | bc -l`
+     else
+       #  echo " alles cool"
+         tors=$winkel_roh
+fi
+
+echo "$tors"
+
+
+}
+
+
+
+
+ #echo "$File $Param $Param_2"
 
 case $Param in 
-	[Bb]* )
+	[Bb]* ) 
 	N_A=`echo "$Param_2 " | awk '{print $2}'`
 	N_B=`echo "$Param_2 " | awk '{print $3}'`
-	echo "atoms: $N_A $N_B"
+	# echo "atoms: $N_A $N_B"
 	find_XYZ
 	calc_dist
-	echo "bond lengt" ;;
-	[Aa]*)
+	# echo "bond lengt" 
+    ;;
+	[Aa]* ) 
 	N_A=`echo "$Param_2 " | awk '{print $2}'`
 	N_B=`echo "$Param_2 " | awk '{print $3}'`
 	N_C=`echo "$Param_2 " | awk '{print $4}'`
 	find_XYZ
 	calc_angle
-	echo "angle" ;;
-	[Dd]*)
+	# echo "angle" 
+    ;;
+	[Dd]* ) 
 	N_A=`echo "$Param_2 " | awk '{print $2}'`
 	N_B=`echo "$Param_2 " | awk '{print $3}'`
 	N_C=`echo "$Param_2 " | awk '{print $4}'`
 	N_D=`echo "$Param_2 " | awk '{print $5}'`
 	find_XYZ
 	calc_dihedral
-	echo "diehdral" ;;
+	# echo "diehdral" 
+    ;;
+    [Tt]* ) 
+	N_A=`echo "$Param_2 " | awk '{print $2}'`
+	N_B=`echo "$Param_2 " | awk '{print $3}'`
+	N_C=`echo "$Param_2 " | awk '{print $4}'`
+	N_D=`echo "$Param_2 " | awk '{print $5}'`
+	find_XYZ
+	calc_tors
+	# echo "diehdral" 
+    ;;
 	*)
 	echo "cannot read ! see readparm -h for help."
 esac
