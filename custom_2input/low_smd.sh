@@ -9,7 +9,7 @@
 program=orca
 route="! PBEh-3c CPCM TIGHTSCF  Grid4 NoFinalGrid"
 filetype="inp"
-block="%cpcm  \n\tsmd true\n\t smdsolvent \"Toluene\" \n end"
+block="%cpcm  \n\tsmd true\n\t smdsolvent \"Benzene\" \n end"
 
 proc=4
 mem=2000
