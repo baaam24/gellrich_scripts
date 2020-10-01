@@ -586,7 +586,7 @@ for (( i=0 ; i < ${#OPTFREQARR[@]} ; i++ )) ; do
 #	unset linespe
 	unset check linenumspe linespe linenumoptfreq lineoptfreq energyspe leveloptfreq levelspe mergedlevel SMDmatch SMDresults G_solv_au G_solv_kcal SOLVENT matchoptfreq matchspe
 	#check=($(cat $TEMPDATA | cut -f"$index_FILENAME" -d';' | grep -n -E "^(spe|SPE)+((-|_)?[[:alnum:]](-|_)?)*${OPTFREQARR[$i]}\$" | cut -f1 -d':' | sort -n -r))
-	check=($(cat $TEMPDATA | cut -f"$index_FILENAME" -d';' | grep -n -E "^${file2/.out}(-|_)+(spe|SPE)+((-|_)?[[:alnum:]](-|_)?)*.out\$" | cut -f1 -d':' | sort -n -r))
+	check=($(cat $TEMPDATA | cut -f"$index_FILENAME" -d';' | grep -n -E "^${OPTFREQARR[$i]/.out}(-|_)+(spe|SPE)+((-|_)?[[:alnum:]](-|_)?)*.out\$" | cut -f1 -d':' | sort -n -r))
 	if ! [[ -z ${check[@]} ]]; then #### matching SPE-computation to OPTFREQ computation, preparing VARIABLES
 		for linenumspe in ${check[@]}; do 	#linenumber of TEMPDATA containing SPE data
 			linespe=$(sed -n "$linenumspe"p $TEMPDATA)	#line itself of TEMPDATA containing SPE data
