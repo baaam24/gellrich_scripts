@@ -76,11 +76,14 @@ case $PROGNAME in
 ######### ORCA (BETA)
 
 
-NATOMS=$(grep -m1 "Number of atoms" $1 | awk '{print $NF}')
-HELPVAR=$(echo $NATOMS+1 | bc -l)
-COORDS_RAW=$(tac $1 | grep -m1 -B"$HELPVAR" "CARTESIAN COORDINATES (ANGSTROEM)" | tac | tail -"$NATOMS")
+#NATOMS=$(grep -m1 "Number of atoms" $1 | awk '{print $NF}')
+#HELPVAR=$(echo $NATOMS+1 | bc -l)
+#COORDS_RAW=$(tac $1 | grep -m1 -B"$HELPVAR" "CARTESIAN COORDINATES (ANGSTROEM)" | tac | tail -"$NATOMS")
 
-
+start=$(grep -n "CARTESIAN COORDINATES (ANGSTROEM)" $1 | tail -1 | cut -f1 -d':'); ((start+=2))
+end=$(grep -n "CARTESIAN COORDINATES (A.U.)" $1 | tail -1 | cut -f1 -d':'); ((end-=3))
+NATOMS=$((end-start+1))
+COORDS_RAW=$(sed -n "$start","$end"p $1)
 
 	;;
 
