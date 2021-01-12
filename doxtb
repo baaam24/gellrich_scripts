@@ -174,7 +174,7 @@ echo "Read Input: ${input[@]}"
 ##### check if plot-variable is set
 plot=$(echo ${input[@]} | tr -s ' ' '\n' | grep -i -w "plot")
 
-##### check if charge is set
+##### check if charge is set, charge=0 default
 charge=$(echo ${input[@]} | tr -s ' ' '\n' | grep -i "charge" | cut -f2 -d'=')
 if [[ -z $charge ]]; then charge=0; fi # default
 
