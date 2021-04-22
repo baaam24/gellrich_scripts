@@ -93,6 +93,9 @@ case $HOST in
 	FUCHS )
 	shift_files; squeue_1
 	;;
+	JustHPC )
+	shift_files; squeue_1
+	;;
 	*)
 	echo unknown host
 	exit

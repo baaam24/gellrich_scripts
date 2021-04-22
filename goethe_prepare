@@ -56,7 +56,50 @@ echo "done"
 
 no_dat_files=`ls -l | grep -c  ".dat"`
 no_inp_files=`ls -l | grep -c  ".inp"`
-no_cores=40 
+
+
+cluster=`ident_host | awk '{print $1}'`
+
+case "$cluster" in
+        unknown)
+                echo "cluster unkown"
+                exit 5
+                ;;
+        HALO)
+		echo "Halo not supported"
+		exit 6
+                ;;
+        FUCHS)
+		echo "Fuchs not supported"
+		exit 6
+                ;;
+        GOETHE)
+		no_cores=40 
+                ;;
+	JustHPC)
+		no_cores=24
+		;;
+        *)
+                echo "detremine cluster: system unknown or not implemented yet"
+                echo "report to tizian"
+                exit 7
+                ;;
+esac
+
+
+
+
+
+# number of memory per job
+# buffer used by submit-scrit: 20%
+# mem of "small" node 192GB => 160 GB RAM per node usable
+# memory one job can use: (MB)
+# same holds true for just-hpc
+job_mem=`echo " 160 * 1000 / $no_files" | bc `
+# usable memory per core (MB)
+job_cpu_mem=`echo " 160 * 1000 / $no_cores" | bc `
+
+
 
 
 
@@ -101,13 +144,7 @@ echo "nojobcores $no_job_cores"
 
 
 
-# number of memory per job
-# buffer used by submit-scrit: 20%
-# mem of "small" node 192GB => 160 GB RAM per node usable
-# memory one job can use: (MB)
-job_mem=`echo " 160 * 1000 / $no_files" | bc `
-# usable memory per core (MB)
-job_cpu_mem=`echo " 160 * 1000 / $no_cores" | bc `
+
 
 
 

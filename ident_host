@@ -26,5 +26,6 @@ case $IP in
 #  	141.2.213.49   ) echo  "FUCHS $IP" ;;
 #  	141.2.213.50   ) echo  "FUCHS $IP" ;;
   	134.176.10.214 ) echo  "Tizian_test $IP";;
+	134.176.2.179 ) echo "JustHPC $IP";;
   *) echo  "unknown $IP";;
 esac
