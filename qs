@@ -93,7 +93,11 @@ case $HOST in
 	FUCHS )
 	shift_files; squeue_1
 	;;
+<<<<<<< HEAD
 	JustHPC )
+=======
+	unknown )	# JUSTHPC
+>>>>>>> 03c05e16127c7b920d7d0fca3f8565db5b70781c
 	shift_files; squeue_1
 	;;
 	*)
