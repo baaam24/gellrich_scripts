@@ -7,7 +7,7 @@
 program=orca
 route="! PBEh-3c TIGHTSCF OptTS Freq Grid4 NoFinalGrid"
 filetype="inp"
-block=" "
+block="%geom \n\tCalc_Hess true\n\tRecalc_Hess 5\nend\n "
 proc=6
 mem=2000
 
@@ -16,5 +16,5 @@ mem=2000
 
 #multi=1
 #charge=0
-prefix="TS"
+prefix="TS_"
 add_comment="PBEh-3c TS-optimization for low level scheme"
