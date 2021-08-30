@@ -19,5 +19,5 @@ mem=2000
 #multi=1
 #charge=0
 suffix="_PBEh3c"
-prefix="opt_CPCM__"
+prefix="opt_CPCM_"
 add_comment="for orca version 5"
