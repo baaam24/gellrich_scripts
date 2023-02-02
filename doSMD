@@ -123,7 +123,7 @@ function ident_prog {
 																																															SMDINP=$(echo $NAME'_'SMD'_'$SOLVENT.inp)
 																																																	if [[ -f $SMDINP ]] ; then echo "$SMDINP already exists. Aborting." ; return 126; fi 
 																																																			cat > $SMDINP <<?
-! PBE0 def2-SVP TightSCF Grid4 FinalGrid5
+! PBE0 def2-SVP TightSCF defgrid2
 
 %base"gas-spe"
 %MaxCore 2000
@@ -138,7 +138,7 @@ $RAWCOORDS
 		echo '$new_job' >> $SMDINP
 				cat >> $SMDINP <<?
 
-! PBE0 def2-SVP TightSCF Grid4 FinalGrid5 CPCM(toluene)
+! PBE0 def2-SVP TightSCF defgrid2 CPCM(toluene)
 
 %cpcm
 smd true
